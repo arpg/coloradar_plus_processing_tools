@@ -26,6 +26,29 @@ def visualize_pointcloud(points):
     
     o3d.visualization.draw_geometries([pcd])
 
+def decode_realsense_image(msg, display_image=False):
+    """
+    Decode a ROS sensor_msgs/Image message into a numpy array.
+    """
+    if msg.encoding == '16UC1': # Monochrome depth image
+        dtype = np.uint16
+        channels = 1
+    elif msg.encoding == 'rgb8': # RGB image
+        dtype = np.uint8
+        channels = 3
+    else:
+        raise ValueError(f"Unsupported encoding: {msg.encoding}")
+    
+    # Convert the image data to a numpy array and reshape it
+    image = np.frombuffer(msg.data, dtype=dtype).reshape(msg.height, msg.width, channels)
+
+    if display_image:
+        plt.imshow(image,cmap='gray')
+        plt.title('Depth Image')
+        plt.axis('off')
+        plt.show()
+    return image
+
 def decode_odom(msg):
     odom_mat = np.zeros((4, 4))
     odom_mat[0, 3] = msg.pose.pose.position.x
@@ -68,9 +91,16 @@ bag_path = './ec_courtyard_1_liosam.bag'
 bag = rosbag.Bag(bag_path)
 
 ouster_points_topic = "/ouster/points"
+field_names = ['x', 'y', 'z', 'intensity', 'reflectivity']
+
 odom_topic = "/lio_sam/mapping/odometry"
 
-field_names = ['x', 'y', 'z', 'intensity', 'reflectivity']
+depth_image_topic = '/camera/depth/image_rect_raw'
+rs_depth_scan_num = 1
+rs_depth_timestamp_list = []
+rgb_image_topic = "/camera/color/image_raw"
+rs_rgb_scan_num = 1
+rs_rgb_timestamp_list = []
 
 # Dictionaries for timestamps and data
 ouster_timestamps = []
@@ -89,6 +119,17 @@ for topic, msg, t in bag.read_messages(topics=[ouster_points_topic, odom_topic])
         filename = f"./data/ouster/data/{msg_time.replace('.', '_')}.bin"
         pointcloud.tofile(filename)
         ouster_timestamps.append(msg_time)
+    # if topic in [rgb_image_topic, depth_image_topic]:
+    #     # Decode the image message to a numpy array
+    #     image = decode_realsense_image(msg, display_image=False)
+    #     if topic == rgb_image_topic:
+    #         #  image.tofile(f"./data/realsense/rgb_images/data/{rs_rgb_scan_num:05d}.bin")
+    #         rs_rgb_scan_num += 1
+    #         rs_rgb_timestamp_list.append(msg_time)
+    #     elif topic == depth_image_topic:
+    #         #  image.tofile(f"./data/realsense/depth_images/data/{rs_depth_scan_num:05d}.bin")
+    #         rs_depth_scan_num += 1
+    #         rs_depth_timestamp_list.append(msg_time)
     if topic == odom_topic:
         # Decode the odometry
         odom_mat = decode_odom(msg)
@@ -98,6 +139,12 @@ for topic, msg, t in bag.read_messages(topics=[ouster_points_topic, odom_topic])
 # Extract sorted timestamps
 sorted_ouster_timestamps = sorted(ouster_timestamps)
 sorted_odom_timestamps = sorted(odom_data_dict.keys())
+
+# # Write Realsense timestamps and data
+# rs_rgb_timestamps_np = sorted(rs_rgb_timestamp_list)
+# rs_depth_timestamps_np = sorted(rs_depth_timestamp_list)
+# np.savetxt('data/realsense/rgb_images/timestamps.txt', rs_rgb_timestamps_np, fmt='%s')
+# np.savetxt('data/realsense/depth_images/timestamps.txt', rs_depth_timestamps_np, fmt='%s')
 
 # Write ouster timestamps and data
 ouster_timestamps_np = np.array(sorted_ouster_timestamps)
