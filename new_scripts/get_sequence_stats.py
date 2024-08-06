@@ -146,5 +146,5 @@ odom_topic = "/lio_sam/mapping/odometry"
 total_duration_seconds, total_distance_covered = get_seq_stats(directory_path, directories, odom_topic)
 total_minutes, total_seconds = divmod(int(total_duration_seconds), 60)
 
-print(f"\nTotal duration dataset: {total_minutes}:{total_minutes:02d} min:sec")
+print(f"\nTotal duration dataset: {total_minutes}:{total_seconds:02d} min:sec")
 print(f"Total distance covered dataset: {total_distance_covered:0.2f} meters.")
