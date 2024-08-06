@@ -107,18 +107,24 @@ def get_seq_stats(directory_root_path, directories, odom_topic):
             sequence_duration = 0
             sequence_path_length = 0
             files = os.listdir(directory_path)
+
             # Sort files based on the numerical value before the ".bag" extension
             files.sort(key=lambda x: int(re.search(r'(\d+)\.bag$', x).group(1)) if re.search(r'(\d+)\.bag$', x) else 0)
+
             print(f"\nSequence: {directory}")
             for file in files:
                 if file.endswith(".bag"):
                     bag_path = os.path.join(directory_path, file)
+                    
                     duration = get_bag_duration(bag_path)
                     sequence_duration += duration
+                    minutes, seconds = divmod(int(duration), 60)
+
                     path_length, odom_list = get_bag_path_length(bag_path, odom_topic)
                     sequence_path_length += path_length
-                    visualize_trajectory_with_orientation(odom_list)
-                    print(f"    - {file}: {duration} sec , path len: {path_length}")
+                    # visualize_trajectory_with_orientation(odom_list)
+
+                    print(f"    - {file}: {minutes}:{seconds:02d} min:sec, path len: {path_length:02f} meters.")
                     total_duration += duration
             print(f"Total duration for {directory} sequence: {sequence_duration}")
             print(f"Total path length for {directory} sequence: {sequence_path_length}")
@@ -128,8 +134,8 @@ def get_seq_stats(directory_root_path, directories, odom_topic):
 # Define the directories to search for bag files
 directory_path = "/media/donceykong/doncey_ssd_01/coloradar_plus_dataset/bags"
 directories = [
-    # "ec_courtyard",
-    "c4c_garage",
+    "ec_courtyard_liosam",
+    # "c4c_garage",
     # "regent_garage",
     # "ec_hallways",
     # "irl",
