@@ -101,6 +101,7 @@ def get_bag_path_length(bag_path, odom_topic):
 
 def get_seq_stats(directory_root_path, directories, odom_topic):
     total_duration = 0
+    total_distance_covered = 0
     for directory in directories:
         directory_path = os.path.join(directory_root_path, directory)
         if os.path.exists(directory_path) and os.path.isdir(directory_path):
@@ -124,13 +125,14 @@ def get_seq_stats(directory_root_path, directories, odom_topic):
                     sequence_path_length += path_length
                     # visualize_trajectory_with_orientation(odom_list)
 
-                    print(f"    - {file}: {minutes}:{seconds:02d} min:sec, path len: {path_length:02f} meters.")
+                    print(f"    - {file}: {minutes}:{seconds:02d} min:sec, path len: {path_length:0.2f} meters.")
                     total_duration += duration
-            print(f"Total duration for {directory} sequence: {sequence_duration}")
-            print(f"Total path length for {directory} sequence: {sequence_path_length}")
-    return total_duration
+                    total_distance_covered += path_length
+            seq_minutes, seq_seconds = divmod(int(sequence_duration), 60)
+            print(f"Total duration for {directory} sequence: {seq_minutes}:{seq_seconds:02d} min:sec")
+            print(f"Total path length for {directory} sequence: {sequence_path_length:0.2f} meters.")
+    return total_duration, total_distance_covered
 
-# Calculate the total duration in minutes
 # Define the directories to search for bag files
 directory_path = "/media/donceykong/doncey_ssd_01/coloradar_plus_dataset/bags"
 directories = [
@@ -141,7 +143,8 @@ directories = [
     # "irl",
 ]
 odom_topic = "/lio_sam/mapping/odometry"
-total_duration_seconds = get_seq_stats(directory_path, directories, odom_topic)
-total_duration_minutes = total_duration_seconds / 60.0
+total_duration_seconds, total_distance_covered = get_seq_stats(directory_path, directories, odom_topic)
+total_minutes, total_seconds = divmod(int(total_duration_seconds), 60)
 
-print(f"Total duration: {total_duration_minutes:.2f} minutes")
+print(f"\nTotal duration dataset: {total_minutes}:{total_minutes:02d} min:sec")
+print(f"Total distance covered dataset: {total_distance_covered:0.2f} meters.")
