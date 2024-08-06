@@ -76,6 +76,7 @@ if accumulated_points:
     all_points = np.vstack(accumulated_points)
     all_intensities = np.hstack(all_intensities)
     all_reflectivities = np.hstack(all_reflectivities)
+    all_z_values = all_points[:, 2]
 
     # Visualize using Open3D
     point_cloud_o3d = o3d.geometry.PointCloud()
@@ -86,18 +87,22 @@ if accumulated_points:
     intensity_std = np.std(all_intensities)
     reflectivity_mean = np.mean(all_reflectivities)
     reflectivity_std = np.std(all_reflectivities)
+    z_mean = np.mean(all_z_values)
+    z_std = np.std(all_z_values)
 
     # Normalize using the standard deviation
     intensity_normalized = (all_intensities - intensity_mean) / intensity_std
     reflectivity_normalized = (all_reflectivities - reflectivity_mean) / reflectivity_std
+    z_normalized = (all_z_values - z_mean) / z_std
 
     # Clip to range [0, 1] for visualization purposes
+    z_normalized = np.clip(z_normalized, 0, 1)
     intensity_normalized = np.clip(intensity_normalized, 0, 1)
     reflectivity_normalized = np.clip(reflectivity_normalized, 0, 1)
 
     # Combine intensity and reflectivity for RGB mapping
     # Option 1: Average
-    combined_attribute = (intensity_normalized + reflectivity_normalized) / 2
+    combined_attribute = (intensity_normalized + reflectivity_normalized + z_normalized) / 3
     
     # Option 2: Different channels
     # combined_attribute = np.stack((intensity_normalized, reflectivity_normalized, reflectivity_normalized), axis=1)
