@@ -99,52 +99,55 @@ def get_bag_path_length(bag_path, odom_topic):
     bag.close()
     return total_path_length, odom_mat_list
 
-def get_seq_stats(directory_root_path, directories, odom_topic):
-    total_duration = 0
-    total_distance_covered = 0
-    for directory in directories:
-        directory_path = os.path.join(directory_root_path, directory)
-        if os.path.exists(directory_path) and os.path.isdir(directory_path):
-            sequence_duration = 0
-            sequence_path_length = 0
-            files = os.listdir(directory_path)
+import csv
 
-            # Sort files based on the numerical value before the ".bag" extension
-            files.sort(key=lambda x: int(re.search(r'(\d+)\.bag$', x).group(1)) if re.search(r'(\d+)\.bag$', x) else 0)
+def get_seq_stats(directory_root_path, directories, odom_topic, output_csv_path):
+    with open(output_csv_path, mode='w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(['Sequence', 'File', 'Duration (min:sec)', 'Path Length (meters)'])
+        
+        total_duration = 0
+        total_distance_covered = 0
+        for directory in directories:
+            directory_path = os.path.join(directory_root_path, directory, "liosam")
+            if os.path.exists(directory_path) and os.path.isdir(directory_path):
+                files = os.listdir(directory_path)
+                files.sort(key=lambda x: int(re.search(r'(\d+)\_liosam.bag$', x).group(1)) if re.search(r'(\d+)\_liosam.bag$', x) else 0)
 
-            print(f"\nSequence: {directory}")
-            for file in files:
-                if file.endswith(".bag"):
-                    bag_path = os.path.join(directory_path, file)
-                    
-                    duration = get_bag_duration(bag_path)
-                    sequence_duration += duration
-                    minutes, seconds = divmod(int(duration), 60)
+                for file in files:
+                    if file.endswith(".bag"):
+                        bag_path = os.path.join(directory_path, file)
+                        duration = get_bag_duration(bag_path)
+                        minutes, seconds = divmod(int(duration), 60)
 
-                    path_length, odom_list = get_bag_path_length(bag_path, odom_topic)
-                    sequence_path_length += path_length
-                    # visualize_trajectory_with_orientation(odom_list)
+                        path_length, odom_list = get_bag_path_length(bag_path, odom_topic)
 
-                    print(f"    - {file}: {minutes}:{seconds:02d} min:sec, path len: {path_length:0.2f} meters.")
-                    total_duration += duration
-                    total_distance_covered += path_length
-            seq_minutes, seq_seconds = divmod(int(sequence_duration), 60)
-            print(f"Total duration for {directory} sequence: {seq_minutes}:{seq_seconds:02d} min:sec")
-            print(f"Total path length for {directory} sequence: {sequence_path_length:0.2f} meters.")
-    return total_duration, total_distance_covered
+                        # Log to CSV
+                        writer.writerow([directory, file, f"{minutes}:{seconds:02d}", f"{path_length:.2f}"])
+                        print(f"Writing to CSV: {directory}, {file}, Duration: {minutes}:{seconds:02d}, Path Length: {path_length:.2f}")
 
+                        total_duration += duration
+                        total_distance_covered += path_length
+
+        total_minutes, total_seconds = divmod(int(total_duration), 60)
+        writer.writerow(['Total', '', f"{total_minutes}:{total_seconds:02d}", f"{total_distance_covered:.2f}"])
+
+#
 # Define the directories to search for bag files
-directory_path = "/media/donceykong/doncey_ssd_01/coloradar_plus_dataset/bags"
-directories = [
-    "ec_courtyard_liosam",
-    # "c4c_garage",
-    # "regent_garage",
-    # "ec_hallways",
-    # "irl",
-]
+directory_path = "/media/donceykong/puck_of_destiny/datasets/coloradar_plus/bags"
+directories = ["irl", "c4c_garage", "regent_garage", "ec_hallways", "ec_courtyard"]
 odom_topic = "/lio_sam/mapping/odometry"
-total_duration_seconds, total_distance_covered = get_seq_stats(directory_path, directories, odom_topic)
-total_minutes, total_seconds = divmod(int(total_duration_seconds), 60)
+output_csv_path = "./coloradar_plus_dataset_stats.csv"
 
-print(f"\nTotal duration dataset: {total_minutes}:{total_seconds:02d} min:sec")
-print(f"Total distance covered dataset: {total_distance_covered:0.2f} meters.")
+get_seq_stats(directory_path, directories, odom_topic, output_csv_path)
+
+# Check if CSV is written correctly
+if os.path.exists(output_csv_path) and os.path.getsize(output_csv_path) > 0:
+    print(f"CSV file has been written successfully at {output_csv_path} with size {os.path.getsize(output_csv_path)} bytes.")
+else:
+    print("CSV file has not been written or is empty.")
+
+# Optionally, print CSV contents
+with open(output_csv_path, mode='r') as file:
+    print("\nCSV Content:")
+    print(file.read())
