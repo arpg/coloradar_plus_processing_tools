@@ -1,8 +1,8 @@
 import rosbag
 
 # Paths to your original and new ROS bag files
-bag_path = './c4c_parking_garage_1_liosam_heatmap.bag'
-new_bag_path = './c4c_parking_garage_1_retimed.bag'
+bag_path = '/home/donceykong/Desktop/snail_test_liosam_heatmap.bag'
+new_bag_path = '/home/donceykong/Desktop/snail_test_retimed.bag'
 
 # Define the topics to read
 data_cube_topic = "/cascade/data_cube"
