@@ -1,3 +1,6 @@
 
 # Ignore old files to use as guide
 new_scripts/old
+
+# Ignore any Python cache directories
+__pycache__
