@@ -10,7 +10,7 @@ import argparse
 from time import time
 
 # Internal imports
-from dataset_loaders import *
+from old_dataset_loaders import *
 
 # interpolates poses for the given timestamps
 # param[in] src_poses: list of poses in the form of a dict {'position': [x,y,z], 'orientation: [x,y,z,w]'}
@@ -24,7 +24,12 @@ def interpolate_poses(src_poses, src_stamps, tgt_stamps):
   src_end_idx = len(src_stamps) - 1
   tgt_end_idx = len(tgt_stamps) - 1
 
-  # ensure first source timestamp is immediately before first target timestamp
+  # ensure first source timestamp is immediately before first target timestamp 
+  print("type(tgt_stamps):",type(tgt_stamps)) 
+  print("len(tgt_stamps): ",len(tgt_stamps))
+  print("len(src_stamps):",len(src_stamps))
+  print("tgt_start_idx: {}, tgt_end_idx: {}, src_start_idx: {}".format(tgt_start_idx,tgt_end_idx,src_start_idx))
+
   while tgt_start_idx < tgt_end_idx and tgt_stamps[tgt_start_idx] < src_stamps[src_start_idx]:
     tgt_start_idx += 1
 
@@ -193,7 +198,7 @@ if __name__ == '__main__':
   parser.add_argument('-t', '--threshold', type=float, default=0.2, help='intensity threshold for plotting heatmap points')
   parser.add_argument('-mr', '--min_range', type=int, default=10, help='if plotting heatmaps, minimum range bin to start plotting')
   parser.add_argument('-hm', '--plot_heatmap', type=str, default='false', help='true to plot radar heatmaps, false to plot pointclouds')
-  parser.add_argument('-sc', '--single_chip', type=str, default='true', help='true to plot single chip data, false to plot cascade data')
+  parser.add_argument('-sc', '--single_chip', type=str, default='false', help='true to plot single chip data, false to plot cascade data')
   args = parser.parse_args()
 
   args.single_chip = args.single_chip.lower() == 'true'
@@ -220,11 +225,11 @@ if __name__ == '__main__':
   # make extrinsic transforms as 4x4 transformation matrix
   radar_params['T_bs'] = np.eye(4)
   radar_params['T_bs'][:3,3] = radar_params['translation']
-  radar_params['T_bs'][:3,:3] = Rotation.from_quat(radar_params['rotation']).as_dcm()
+  radar_params['T_bs'][:3,:3] = Rotation.from_quat(radar_params['rotation']).as_matrix() #.as_dcm()
 
   lidar_params['T_bs'] = np.eye(4)
   lidar_params['T_bs'][:3,3] = lidar_params['translation']
-  lidar_params['T_bs'][:3,:3] = Rotation.from_quat(lidar_params['rotation']).as_dcm()
+  lidar_params['T_bs'][:3,:3] = Rotation.from_quat(lidar_params['rotation']).as_matrix() #.as_dcm()
 
   # get plot legend labels
   radar_label = radar_params['sensor_type'] + ' ' + radar_params['data_type']
@@ -240,18 +245,22 @@ if __name__ == '__main__':
   gt_poses = get_groundtruth(args.seq)
 
   # interpolate groundtruth poses for each sensor measurement
-  radar_gt, radar_indices = interpolate_poses(gt_poses, gt_timestamps, radar_timestamps)
+  #src_poses, src_stamps, tgt_stamps
+  #radar_gt, radar_indices = interpolate_poses(gt_poses, gt_timestamps, radar_timestamps)
   lidar_gt, lidar_indices = interpolate_poses(gt_poses, gt_timestamps, lidar_timestamps)
 
   # interleave radar and lidar measurements
   plot_data = []
   radar_idx = 0
   lidar_idx = 0
-  while radar_idx < len(radar_indices) or lidar_idx < len(lidar_indices):
-    if radar_idx < len(radar_indices) and radar_timestamps[radar_indices[radar_idx]] < lidar_timestamps[lidar_indices[lidar_idx]]:
+  #radar_idx < len(radar_indices) or 
+  while lidar_idx < len(lidar_indices):
+    '''
+      if radar_idx < len(radar_indices) and radar_timestamps[radar_indices[radar_idx]] < lidar_timestamps[lidar_indices[lidar_idx]]:
       plot_data.append((radar_timestamps[radar_indices[radar_idx]], radar_gt[radar_idx], radar_indices[radar_idx], 'radar'))
       radar_idx += 1
-    elif lidar_idx < len(lidar_indices):
+    '''
+    if lidar_idx < len(lidar_indices):
       plot_data.append((lidar_timestamps[lidar_indices[lidar_idx]], lidar_gt[lidar_idx], lidar_indices[lidar_idx], 'lidar'))
       lidar_idx += 1
 

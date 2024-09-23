@@ -1,6 +1,7 @@
 import numpy as np 
 import struct
 import os
+import json 
 
 # reads raw adc data from bin file 
 # param[in] index: index of the requested frame
@@ -155,7 +156,7 @@ def get_imu(seq_dir):
 # return    list of groundtruth poses where each pose is a dict with two entries:
 #           {'position': [x,y,z], 'orientation': [x,y,z,w]}
 def get_groundtruth(seq_dir):
-  filename = seq_dir + '/groundtruth/groundtruth_poses.txt'
+  filename = seq_dir + '/groundtruth/groundtruth_poses_quat.txt'
   if not os.path.exists(filename):
     print('File ' + filename + ' not found')
     return
@@ -196,7 +197,9 @@ def read_tf_file(filename):
 def get_lidar_params(calib_dir):
   params = {'sensor_type': 'lidar', 'data_type': 'pointcloud'}
   filename = calib_dir + '/transforms/base_to_lidar.txt'
-  params['translation'], params['rotation'] = read_tf_file(filename)
+  #params['translation'], params['rotation'] = read_tf_file(filename)
+  params['translation'] = np.zeros((3,)) 
+  params['rotation'] = np.zeros((4,)); params['rotation'][3] = 1 
   return params
 
 
@@ -334,6 +337,30 @@ def read_phase_freq_calib(calib_filename):
   phase_calib = {}
   freq_calib = {}
 
+  with open(calib_filename) as file: 
+    data = json.load(file) 
+  data = data['antennaCalib'] 
+
+  print("data: ",data)
+  phase_cal_mat_arr = np.array(data['frequencyCalibrationMatrix']) 
+  print("phase_cal_mat_arr:",phase_cal_mat_arr.shape)
+  phase_cal_mat = phase_cal_mat_arr.reshape(int(data['numTx']),int(data['numRx'])) 
+  phase_cal_mat_arr = phase_cal_mat_arr[:-1:2] + 1j * phase_cal_mat_arr[1::2]
+  print("phase_cal_mat_arr: ",phase_cal_mat_arr)
+  print("phase_cal_mat_arr.shape: ",phase_cal_mat_arr.shape)
+  
+
+  phase_calib['num_rx'] = data['numRx']
+  phase_calib['num_tx'] = data['numTx']
+  phase_calib['cal_matrix']= phase_cal_mat 
+
+  freq_calib['num_rx'] = data['numRx']
+  freq_calib["num_tx"] = data['numTx']
+  freq_calib['frequency_slope'] = data['frequencySlope']
+  freq_calib['sampling_rate'] = data['samplingRate']
+  freq_calib['cal_matrix'] = phase_cal_mat 
+
+  '''
   with open(calib_filename) as file:
     lines = file.readlines()
 
@@ -360,6 +387,7 @@ def read_phase_freq_calib(calib_filename):
   freq_calib['frequency_slope'] = frequency_slope
   freq_calib['sampling_rate'] = sampling_rate
   freq_calib['cal_matrix'] = freq_cal_mat
+  '''
 
   return phase_calib, freq_calib
 
@@ -412,7 +440,9 @@ def get_cascade_params(calib_dir):
 
   tf_filename = calib_dir + '/transforms/base_to_cascade.txt'
 
-  t, r = read_tf_file(tf_filename)
+  #t, r = read_tf_file(tf_filename)
+  t = np.zeros((3,)) 
+  r = np.zeros((4,)); r[3] = 1 
 
   wave_params['translation'] = t
   wave_params['rotation'] = r
@@ -440,4 +470,6 @@ def get_cascade_params(calib_dir):
           'antenna': antenna_cfg, 
           'coupling': coupling_calib,
           'phase': phase_calib,
-          'frequency': freq_calib}
+          'frequency': freq_calib} 
+
+
