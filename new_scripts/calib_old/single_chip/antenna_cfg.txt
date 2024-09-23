@@ -1,0 +1,12 @@
+# antenna layout for the AWR1843BOOSTEVM
+# distances specified in half wavelengths of F_base
+num_rx 4
+num_tx 3
+F_design 76.8
+rx 0 0 0 
+rx 1 1 0
+rx 2 2 0
+rx 3 3 0
+tx 0 0 0
+tx 2 2 1
+tx 1 4 0

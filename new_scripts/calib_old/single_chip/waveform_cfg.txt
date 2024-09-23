@@ -1,0 +1,10 @@
+num_rx 4
+num_tx 3
+num_adc_samples_per_chirp 128
+num_chirps_per_frame 128
+adc_sample_frequency 10666000
+start_frequency 76999999488.0
+idle_time 0.000110000000859
+adc_start_time 7.00000009601e-06
+ramp_end_time 1.99999994948e-05
+frequency_slope 1.00000000377e+14
