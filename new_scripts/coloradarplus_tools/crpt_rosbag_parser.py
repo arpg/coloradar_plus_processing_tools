@@ -65,7 +65,7 @@ class BagParser:
         points = pc2.read_points(msg, field_names=field_names, skip_nans=True)
         pointcloud = np.array(list(points), dtype=np.float32)
         # Save point cloud
-        pointcloud_filename = f"{self.lidar_pc_bin_path}/unsorted_pointcloud_{self.lidar_pc_num}.bin"
+        pointcloud_filename = f"{self.lidar_pc_bin_path}/unsorted_lidar_pointcloud_{self.lidar_pc_num}.bin"
         pointcloud.tofile(pointcloud_filename)
         # Store timestamp and index
         self.ouster_ts_index_dict[msg_time] = self.lidar_pc_num
@@ -82,7 +82,7 @@ class BagParser:
         channels = 3
         image = np.frombuffer(msg.data, dtype=dtype).reshape(msg.height, msg.width, channels)
         # Save rgb image
-        rgb_image_filename = f"{self.camera_rgb_path}/unsorted_rgb_image_{self.camera_rgb_num}.bin"
+        rgb_image_filename = f"{self.camera_rgb_path}/unsorted_camera_rgb_image_{self.camera_rgb_num}.bin"
         image.tofile(rgb_image_filename)
         # Store timestamp and index
         self.camera_rgb_ts_index_dict[msg_time] = self.camera_rgb_num
@@ -99,7 +99,7 @@ class BagParser:
         channels = 1
         image = np.frombuffer(msg.data, dtype=dtype).reshape(msg.height, msg.width, channels)
         # Save depth image
-        depth_image_filename = f"{self.camera_depth_path}/unsorted_depth_image_{self.camera_depth_num}.bin"
+        depth_image_filename = f"{self.camera_depth_path}/unsorted_camera_depth_image_{self.camera_depth_num}.bin"
         image.tofile(depth_image_filename)
         # Store timestamp and index
         self.camera_depth_ts_index_dict[msg_time] = self.camera_depth_num
@@ -187,13 +187,13 @@ class BagParser:
                 os.rename(original_filename, new_filename)
         
         # Write and rename CAMERA RGB data
-        save_and_rename("rgb_", self.camera_rgb_ts_index_dict, self.camera_path, self.camera_rgb_path, "rgb_image")
+        save_and_rename("rgb_", self.camera_rgb_ts_index_dict, self.camera_path, self.camera_rgb_path, "camera_rgb_image")
         
         # Write and rename CAMERA DEPTH data
-        save_and_rename("depth_", self.camera_depth_ts_index_dict, self.camera_path, self.camera_depth_path, "depth_image")
+        save_and_rename("depth_", self.camera_depth_ts_index_dict, self.camera_path, self.camera_depth_path, "camera_depth_image")
         
         # Write and rename LIDAR data
-        save_and_rename("", self.ouster_ts_index_dict, self.lidar_path, self.lidar_pc_bin_path, "pointcloud")
+        save_and_rename("", self.ouster_ts_index_dict, self.lidar_path, self.lidar_pc_bin_path, "lidar_pointcloud")
         
         # Write odometry timestamps and data
         odom_timestamps_np = np.array(sorted(self.odom_4x4_ts_data_dict.keys()))
