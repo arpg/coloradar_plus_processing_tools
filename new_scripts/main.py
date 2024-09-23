@@ -33,6 +33,7 @@ def parse_config(config_path):
         "main_bag_directory_path": config.get("main_bag_directory_path", []),
         "main_kitti_directory_path": config.get("main_kitti_directory_path", []),
         "generate_sequence_run_stats": (config.get("generate_sequence_run_stats", True)),
+        "display_rosbag_data": (config.get("display_rosbag_data", True)),
         "sequences": (
             config["sequences"]
         ),
@@ -41,7 +42,7 @@ def parse_config(config_path):
 
 def main():
     # Convert values from YAML config to dict for easier handling
-    crp_config_dict = parse_config("new_scripts/processing_config.yaml")
+    crp_config_dict = parse_config("./processing_config.yaml")
 
     # Initialize bag_parser object
     dataset2kitti = DatasetToKitti(crp_config_dict)

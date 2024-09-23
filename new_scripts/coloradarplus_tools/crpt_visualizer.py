@@ -2,15 +2,17 @@
 """_summary_
 """
 
+import numpy as np
 import open3d as o3d
+import matplotlib.pyplot as plt
 
 class Visualizer():
     """_summary_
     """
-    def __init__(self, visualize_rosbag_data = False):
-        self.visualize_rosbag_data = visualize_rosbag_data
+    def __init__(self):
+        pass
 
-    def visualize_pointcloud(points):
+    def visualize_pointcloud(self, points):
         pcd = o3d.geometry.PointCloud()
         pcd.points = o3d.utility.Vector3dVector(points[:, :3])
         
@@ -22,14 +24,14 @@ class Visualizer():
         
         o3d.visualization.draw_geometries([pcd])
 
-    def visualize_depth_image(image):
+    def visualize_depth_image(self, image):
         plt.imshow(image,cmap='gray')
         plt.title('Depth Image')
         plt.axis('off')
         plt.show()
 
-    def visualize_rgb_image(image):
-        plt.imshow(image,cmap='rgb')
-        plt.title('Depth Image')
+    def visualize_rgb_image(self, image):
+        plt.imshow(image)
+        plt.title('RGB Image')
         plt.axis('off')
         plt.show()

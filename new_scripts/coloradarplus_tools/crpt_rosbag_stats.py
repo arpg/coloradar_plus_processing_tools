@@ -1,3 +1,9 @@
+#!/usr/bin/env python3
+"""
+ColoRadar Processing Tools - crpt_rosbag_stats.py
+
+Author: Doncey Albin
+"""
 import rosbag
 import numpy as np
 import matplotlib.pyplot as plt

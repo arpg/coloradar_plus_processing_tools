@@ -1,12 +1,13 @@
 # ColoradarPlus Processing Configuration
 
-main_bag_directory_path: "/media/"
-main_kitti_directory_path: "/media/"
+main_bag_directory_path: "/media/donceykong/edd/in_processing/bags/"
+main_kitti_directory_path: "/media/donceykong/edd/in_processing/kitti/"
 generate_sequence_run_stats: true
+display_rosbag_data: false
 
 sequences:
-  lobby: 
-    runs: [6, 7, 9, 10]
+  c4c_garage: 
+    runs: [4]
 
   ec_courtyard: 
-    runs: [6, 7, 9, 10]
+    runs: [4]

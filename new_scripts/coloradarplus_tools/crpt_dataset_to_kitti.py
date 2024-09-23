@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
 """
+ColoRadar Processing Tools - crpt_dataset_to_kitti.py
 
+Author: Doncey Albin
 """
 
 import os
 import numpy as np
+import shutil
 
+# Internal Imports
 from coloradarplus_tools import BagParser
 from coloradarplus_tools import Visualizer
 
@@ -21,29 +25,37 @@ class DatasetToKitti:
         """
         # Extract data from runs in each sequence specified in config
         for seq_name in self.crp_config_dict["sequences"]:
+            print(f"\n\nSequence: {seq_name}")
             sequence = self.crp_config_dict["sequences"][f"{seq_name}"]
             for run_name in sequence["runs"]:
                 self.bag_to_kitti(seq_name, run_name)
 
     def bag_to_kitti(self, seq_name, run_name):
-        print(f"seq_name: {seq_name}, run_name: {run_name}")
+        print(f"    * run: {run_name}")
 
         # Create KITTI-style directory for run
         kitti_paths_dict = self.create_run_kitti_directory(seq_name=seq_name, run_name=run_name)
+        kitti_directory_path = kitti_paths_dict['directory_path']
+        print(f"        - Created KITTI-style directory: {kitti_directory_path}")
 
         # Init bagparser object
-        visualize_rosbag_data = self.crp_config_dict["display_rosbag_data"]
-        bag_parser = BagParser(visualize_rosbag_data=visualize_rosbag_data, 
+        bag_parser = BagParser(visualize_rosbag_data=self.crp_config_dict["display_rosbag_data"], 
                                log_paths_dict=kitti_paths_dict,
                                visulizer=self.visualizer)
 
-        # Extract data
-        root_bag_dir = self.crp_config_dict["main_bag_directory_path"]
-        bag_path = os.path.join(root_bag_dir, seq_name, f"{seq_name}_{run_name:02d}.bag")
+        # Parse rosbag data
+        bag_path = os.path.join(self.crp_config_dict["main_bag_directory_path"], seq_name, f"{seq_name}_{run_name:02d}_complete.bag")
+        print(f"        - Parsing rosbag: {bag_path}")
         bag_parser.read_bag(rosbag_path=bag_path)
 
         # Save data
-        bag_parser.write_data_to_files(log_paths_dict = kitti_paths_dict)
+        bag_parser.write_data_to_files()
+
+        # Compress kitti-style directory and delete uncompressed
+        print(f"        - Compressing and removing uncompressed directory: {kitti_directory_path}")
+        compressed_path = shutil.make_archive(kitti_directory_path, 'zip', kitti_directory_path)
+        shutil.rmtree(kitti_directory_path)
+        print(f"        - Run {run_name} processed and compressed to {compressed_path}")
 
     def create_run_kitti_directory(self, seq_name, run_name):
         # Make sure base directory for run exists or create it
@@ -53,6 +65,7 @@ class DatasetToKitti:
 
         # Dictionary to hold all necessary subdirectory paths
         run_dir_paths_dict = {
+            'directory_path': directory_path,
             'cascade_path': os.path.join(directory_path, "cascade", "heatmaps"),
             'groundtruth_path': os.path.join(directory_path, "groundtruth"),
             'imu_path': os.path.join(directory_path, "imu"),
@@ -66,7 +79,5 @@ class DatasetToKitti:
         # Create all directories based on the paths in the dictionary
         for path in run_dir_paths_dict.values():
             os.makedirs(path, exist_ok=True)
-
-        print(f"Directory and subdirectories ensured: {directory_path}")
 
         return run_dir_paths_dict
