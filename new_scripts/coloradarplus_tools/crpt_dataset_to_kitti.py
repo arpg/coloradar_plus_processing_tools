@@ -66,10 +66,15 @@ class DatasetToKitti:
         # Dictionary to hold all necessary subdirectory paths
         run_dir_paths_dict = {
             'directory_path': directory_path,
-            'cascade_path': os.path.join(directory_path, "cascade", "heatmaps"),
+            'calib_trans_dir_path': os.path.join(root_kitti_dir, "calib", "transforms"),
+            'calib_cascade_dir_path': os.path.join(root_kitti_dir, "calib", "cascade"),
+            'cascade_heatmap_path': os.path.join(directory_path, "cascade", "heatmaps"),
+            'cascade_heatmap_data_path': os.path.join(directory_path, "cascade", "heatmaps", "data"),
+            'cascade_datacube_path': os.path.join(directory_path, "cascade", "adc_samples"),
+            'cascade_datacube_data_path': os.path.join(directory_path, "cascade", "adc_samples", "data"),
             'groundtruth_path': os.path.join(directory_path, "groundtruth"),
             'imu_path': os.path.join(directory_path, "imu"),
-            'lidar_path': os.path.join(directory_path, "lidar", "pointclouds"),
+            'lidar_path': os.path.join(directory_path, "lidar"),
             'lidar_pc_bin_path': os.path.join(directory_path, "lidar", "pointclouds"),
             'camera_path': os.path.join(directory_path, "camera"),
             'camera_rgb_path': os.path.join(directory_path, "camera", "images", "rgb"),
