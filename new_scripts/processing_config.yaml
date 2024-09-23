@@ -10,4 +10,4 @@ sequences:
     runs: [4]
 
   ec_courtyard: 
-    runs: [4]
+    runs: [4, 5]
