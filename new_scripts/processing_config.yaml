@@ -1,0 +1,12 @@
+# ColoradarPlus Processing Configuration
+
+main_bag_directory_path: "/media/"
+main_kitti_directory_path: "/media/"
+generate_sequence_run_stats: true
+
+sequences:
+  lobby: 
+    runs: [6, 7, 9, 10]
+
+  ec_courtyard: 
+    runs: [6, 7, 9, 10]
