@@ -12,6 +12,15 @@ from time import time
 # Internal imports
 from old_dataset_loaders import *
 
+def lerp(q0, q1, t):
+    """
+    Linearly interpolate between two quaternions (q0, q1) by factor t.
+    """
+    q0 = np.array(q0)
+    q1 = np.array(q1)
+    
+    return (1 - t) * q0 + t * q1
+
 # interpolates poses for the given timestamps
 # param[in] src_poses: list of poses in the form of a dict {'position': [x,y,z], 'orientation: [x,y,z,w]'}
 # param[in] src_stamps: list of timestamps for the src_poses
@@ -46,18 +55,37 @@ def interpolate_poses(src_poses, src_stamps, tgt_stamps):
     # find source timestamps bracketing target timestamp
     while src_idx + 1 <= src_end_idx and src_stamps[src_idx + 1] < tgt_stamps[tgt_idx]:
       src_idx += 1
+    
+    target_timestamp = tgt_stamps[tgt_idx]
+    q0 = src_poses[src_idx]['orientation']
+    q1 = src_poses[src_idx + 1]['orientation']
+    p0 = src_poses[src_idx]['position']
+    p1 = src_poses[src_idx + 1]['position']
+    t0 = src_stamps[src_idx]
+    t1 = src_stamps[src_idx + 1]
+
     # get interpolation coefficient
-    c = ((tgt_stamps[tgt_idx] - src_stamps[src_idx]) 
-          / (src_stamps[src_idx+1] - src_stamps[src_idx]))
+    c = (target_timestamp - t0) / (t1 - t0)  # Convert Decimal to float for ratio
     # interpolate position
     pose = np.eye(4)
-    pose[:3,3] = ((1.0 - c) * src_poses[src_idx]['position'] + c * src_poses[src_idx+1]['position'])
+    pose[:3,3] = ((1.0 - c) * p0 + c * p1)
+
     # interpolate orientation
-    r_src = Rotation.from_quat([src_poses[src_idx]['orientation'],
-                            src_poses[src_idx+1]['orientation']])
-    slerp = Slerp([0,1],r_src)
-    pose[:3,:3] = slerp([c])[0].as_dcm()
+    r_src = Rotation.from_quat([q0, q1])
+    print(f"r_src: {r_src.as_matrix()}")
+    slerp = Slerp([0,1], r_src)
+    pose[:3,:3] = slerp([c]).as_matrix()
+
+    # q_interp = lerp(q0, q1, c)
+    # pose[:3,:3] = Rotation.from_quat(q_interp).as_matrix()
     tgt_poses.append(pose)
+
+    # # interpolate orientation
+    # r_src = Rotation.from_quat([q0, q1])
+    # slerp = Slerp([float(t0), float(t1)], r_src)
+    # pose[:3,:3] = slerp(target_timestamp).as_matrix()
+    # tgt_poses.append(pose)
+    
     # advance target index
     tgt_idx += 1
   tgt_indices = range(tgt_start_idx, tgt_end_idx + 1)
@@ -123,6 +151,7 @@ def transform_pcl(pcl, T):
 
 # animates sensor measurements for your enjoyment and edification
 def animate_plot(i):
+  global accum_pc
   global lidar_pc
   global radar_pc
   global radar_pc_precalc
@@ -133,7 +162,7 @@ def animate_plot(i):
   # break up groundtruth transform into rotation and translation
   R_wb = np.array(plot_data[i][1])
   t_wb = np.array(R_wb[:3,3])
-  R_wb[:3,3] = 0.0
+  # R_wb[:3,3] = 0.0
 
   # determine if the lidar or radar plot is replaced
   # and load new plot in base sensor rig frame
@@ -141,11 +170,13 @@ def animate_plot(i):
     # load lidar pointcloud from file
     lidar_pc_local = get_pointcloud(plot_data[i][2], args.seq, lidar_params)
     # downsample for faster plotting
-    lidar_pc_local = downsample_pointcloud(lidar_pc_local, 0.3)
+    lidar_pc_local = downsample_pointcloud(lidar_pc_local, 0.2)
     # transform pointcloud to plotting frame
     T_ws = np.dot(R_wb, lidar_params['T_bs'])
     lidar_pc = transform_pcl(lidar_pc_local, T_ws)
-
+    accum_pc = np.concatenate((accum_pc, lidar_pc), axis=0)
+    accum_pc = accum_pc[accum_pc[:, 2] <= 0.5]
+    accum_pc = downsample_pointcloud(accum_pc, 0.2)
   else:
     if args.plot_heatmap:
       # load full radar heatmap from file
@@ -176,15 +207,22 @@ def animate_plot(i):
     if plot_data[i][3] == 'lidar':
       radar_pc[:,:3] += (positions[-2] - positions[-1])
     else:
-      lidar_pc[:,:3] += (positions[-2] - positions[-1])
+      lidar_pc[:,:3] = t_wb # was += positions[-2] #(positions[-2] - positions[-1])
 
   # add current position to plotted path
-  positions = np.concatenate((positions, t_wb.reshape(1,3)),axis=0)
-  positions_ctr = positions - t_wb
+  positions = np.concatenate((positions, t_wb.reshape(1,3)), axis=0)
+  positions_ctr =  positions# - t_wb
 
   # update plot data
   plots['positions'][0]._verts3d = (positions_ctr[:,0], positions_ctr[:,1], positions_ctr[:,2])
   plots['lidar']._offsets3d = (lidar_pc[:,0], lidar_pc[:,1], lidar_pc[:,2])
+  plots['lidar'].set_array(lidar_pc[:, 3])  # Sets colormap to intensity channel
+  plots['lidar'].set_cmap('plasma')
+
+  plots['accum_lidar']._offsets3d = (accum_pc[:,0], accum_pc[:,1], accum_pc[:,2])
+  plots['accum_lidar'].set_array(accum_pc[:, 3])  # Sets colormap to intensity channel
+  plots['accum_lidar'].set_cmap('viridis')        # Use a colormap like 'viridis'
+
   plots['radar']._offsets3d = (radar_pc[:,0], radar_pc[:,1], radar_pc[:,2])
   plots['radar'].set_array(radar_pc[:,3])
   plots['radar'].set_cmap('plasma')
@@ -193,26 +231,22 @@ def animate_plot(i):
 if __name__ == '__main__':
 
   parser = argparse.ArgumentParser(description='get location for sequence and calibration')
-  parser.add_argument('-s', '--seq', type=str, help='directory of the sequence')
-  parser.add_argument('-c', '--calib', type=str, help='directory of calib data')
+  parser.add_argument('-s', '--seq', type=str, default="/media/donceykong/edd/in_processing/kitti/c4c_garage/c4c_garage_04", help='directory of the sequence')
+  parser.add_argument('-c', '--calib', type=str, default="/media/donceykong/edd/in_processing/kitti/calib", help='directory of calib data')
   parser.add_argument('-t', '--threshold', type=float, default=0.2, help='intensity threshold for plotting heatmap points')
   parser.add_argument('-mr', '--min_range', type=int, default=10, help='if plotting heatmaps, minimum range bin to start plotting')
-  parser.add_argument('-hm', '--plot_heatmap', type=str, default='false', help='true to plot radar heatmaps, false to plot pointclouds')
-  parser.add_argument('-sc', '--single_chip', type=str, default='false', help='true to plot single chip data, false to plot cascade data')
+  parser.add_argument('-hm', '--plot_heatmap', type=bool, default=True, help='true to plot radar heatmaps, false to plot pointclouds')
+  parser.add_argument('-sc', '--single_chip', type=bool, default=False, help='true to plot single chip data, false to plot cascade data')
   args = parser.parse_args()
 
-  args.single_chip = args.single_chip.lower() == 'true'
-  args.plot_heatmap = args.plot_heatmap.lower() == 'true'
+  # args.single_chip = args.single_chip.lower() == False
+  # args.plot_heatmap = args.plot_heatmap.lower() == True #'false'
 
   if not args.single_chip and not args.plot_heatmap:
     print('warn: pointclouds not available for cascade sensor, setting --plot_heatmap to True')
     args.plot_heatmap = True
 
-  # get config parameters for each sensor type
-  if args.single_chip:
-    all_radar_params = get_single_chip_params(args.calib)
-  else:
-    all_radar_params = get_cascade_params(args.calib)
+  all_radar_params = get_cascade_params(args.calib)
 
   if args.plot_heatmap:
     radar_params = all_radar_params['heatmap']
@@ -246,7 +280,7 @@ if __name__ == '__main__':
 
   # interpolate groundtruth poses for each sensor measurement
   #src_poses, src_stamps, tgt_stamps
-  #radar_gt, radar_indices = interpolate_poses(gt_poses, gt_timestamps, radar_timestamps)
+  radar_gt, radar_indices = interpolate_poses(gt_poses, gt_timestamps, radar_timestamps)
   lidar_gt, lidar_indices = interpolate_poses(gt_poses, gt_timestamps, lidar_timestamps)
 
   # interleave radar and lidar measurements
@@ -265,21 +299,23 @@ if __name__ == '__main__':
       lidar_idx += 1
 
   # if using heatmap precalculate point locations because they're always the same and there's a ton of them
-  if args.plot_heatmap: 
-    radar_pc_precalc = get_heatmap_points(radar_params)
-  else:
-    radar_pc_precalc = np.random.rand(10,4)
+  # if args.plot_heatmap: 
+  #   radar_pc_precalc = get_heatmap_points(radar_params)
+  # else:
+  #   radar_pc_precalc = np.random.rand(10,4)
 
+  radar_pc_precalc = np.random.rand(10,4)
   radar_pc = np.random.rand(10,4)
-  lidar_pc = np.random.rand(10,4)
+  lidar_pc = np.random.rand(10,5)
+  accum_pc = np.empty((0, 5))
   positions = np.zeros((1,3))
 
   # initialize plot
   fig = plt.figure()
-  ax = fig.gca(projection='3d')
-  ax.set_xlim((-10,10))
-  ax.set_ylim((-10,10))
-  ax.set_zlim((-10,10))
+  ax = fig.add_subplot(111, projection='3d')  # Corrected line
+  ax.set_xlim((-40,40))
+  ax.set_ylim((-40,40))
+  ax.set_zlim((-40,40))
   ax.set_title('lidar and ' + radar_label)
   plots = {}
 
@@ -288,27 +324,38 @@ if __name__ == '__main__':
                               radar_pc[:,2],
                               c = [],
                               marker='.',
-                              s=10,
+                              s=0.8,
                               label=radar_label)
   
   plots['lidar'] = ax.scatter(lidar_pc[:,0],
                               lidar_pc[:,1],
                               lidar_pc[:,2],
-                              c='r',
+                              c='k',
                               marker='.',
                               s=0.5,
                               label=lidar_label)                 
 
+  plots['accum_lidar'] = ax.scatter(accum_pc[:,0],
+                              accum_pc[:,1],
+                              accum_pc[:,2],
+                              c = 'b',
+                              marker='.',
+                              s=0.2,
+                              label="Accumulated lidar")
+  
   plots['positions'] = ax.plot(positions[:,0],
                                positions[:,1],
                                positions[:,2],
                                c='g')
 
   # start animation
+  lidar_FPS = 20            # [hz]  
+  lidar_SPF = 1 / lidar_FPS # [sec] sec per frame
+  lidar_mSPF = 1000 * lidar_SPF # [ms] milisec per frame
   anim = animation.FuncAnimation(fig,
                                  animate_plot,
                                  frames=len(plot_data),
-                                 interval=1,
+                                 interval=lidar_mSPF,
                                  blit=False,
                                  repeat=False)
 
