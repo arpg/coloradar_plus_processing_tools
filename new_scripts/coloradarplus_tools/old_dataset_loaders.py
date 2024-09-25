@@ -72,14 +72,18 @@ def get_heatmap(index, seq_dir, params):
 #           lidar point values are [x,y,z,intensity]
 #           radar point values are [x,y,z,intensity,doppler]
 def get_pointcloud(index, seq_dir, params):
+  print(f"index: {index}")
   if params['sensor_type'] == 'lidar':
-    filename = seq_dir + 'lidar/pointclouds/lidar_pointcloud_' + str(index) + '.bin'
-  else:
-    filename = seq_dir + 'single_chip/pointclouds/data/radar_pointcloud_' + str(index) + '.bin'
+    filename = seq_dir + '/lidar/pointclouds/lidar_pointcloud_' + str(index) + '.bin'
+  # else:
+  #   filename = seq_dir + 'single_chip/pointclouds/data/radar_pointcloud_' + str(index) + '.bin'
 
   if not os.path.exists(filename):
     print('File ' + filename + ' not found')
     return None
+
+  # print(f"filename: {filename}")
+  # cloud = np.fromfile(filename, dtype=np.float32).reshape((-1,5))
 
   with open(filename, mode='rb') as file:
     cloud_bytes = file.read()
@@ -88,10 +92,8 @@ def get_pointcloud(index, seq_dir, params):
   cloud_vals = np.array(cloud_vals)
 
   if params['sensor_type'] == 'lidar':
-    cloud = cloud_vals.reshape((-1,4))
-  else:
     cloud = cloud_vals.reshape((-1,5))
-
+    cloud = cloud[:, :5]
   return cloud
 
 
@@ -400,9 +402,10 @@ def get_single_chip_params(calib_dir):
   hm_params = {'sensor_type': 'single_chip'}
   pc_params = {'sensor_type': 'single_chip', 'data_type': 'pointcloud'}
 
-  tf_filename = calib_dir + '/transforms/base_to_single_chip.txt'
+  # tf_filename = calib_dir + '/transforms/base_to_single_chip.txt'
 
-  t, r = read_tf_file(tf_filename)
+  t = np.zeros([3,])
+  r = np.array([0, 0, 0, 1]) #read_tf_file(tf_filename)
 
   wave_params['translation'] = t
   wave_params['rotation'] = r
