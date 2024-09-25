@@ -216,11 +216,11 @@ class BagParser:
                                                       msg.linear_acceleration.z,
                                                       msg.angular_velocity.x,
                                                       msg.angular_velocity.y,
-                                                      msg.angular_velocity.z,
-                                                      msg.orientation.x,
-                                                      msg.orientation.y,
-                                                      msg.orientation.z,
-                                                      msg.orientation.w])
+                                                      msg.angular_velocity.z,])
+                                                    #   msg.orientation.x,
+                                                    #   msg.orientation.y,
+                                                    #   msg.orientation.z,
+                                                    #   msg.orientation.w])
 
 
     def gen_cascade_heatmap_config(self, msg):
