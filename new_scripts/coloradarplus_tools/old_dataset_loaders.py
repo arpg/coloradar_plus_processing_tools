@@ -2,6 +2,62 @@ import numpy as np
 import struct
 import os
 import json 
+import cv2 
+
+def bin_to_jpg(bin_file, output_jpg, width, height, channels):
+    # Step 1: Read the binary file
+    with open(bin_file, 'rb') as f:
+        # Load the binary data
+        img_data = f.read()
+
+    # Step 2: Convert the binary data to a NumPy array
+    if channels == 1:
+        img_array = np.frombuffer(img_data, dtype=np.uint16)  # 16-bit depth image
+        img_array = img_array.reshape((height, width))
+    else:
+        img_array = np.frombuffer(img_data, dtype=np.uint8)
+        img_array = img_array.reshape((height, width, channels))  # RGB or other formats
+
+    if channels == 3:
+        img_array = cv2.cvtColor(img_array, cv2.COLOR_BGR2RGB)
+
+    # Step 4: Normalize the depth image for saving as JPG (optional)
+    if channels == 1:
+        # Normalize to the range [0, 255] for visualization (optional step)
+        img_array = cv2.normalize(img_array, None, 0, 255, cv2.NORM_MINMAX)
+        img_array = img_array.astype(np.uint8)  # Convert to 8-bit
+
+    # Step 5: Save the image using OpenCV
+    print(f"writing {output_jpg} ...")
+    cv2.imwrite(output_jpg, img_array)
+
+def parse_img_filename(filename):
+  underscore_idx = [i for i,x in enumerate(filename) if x =="_"][-1]
+  file_no = filename[underscore_idx+1:-4] 
+  out_filename = file_no.zfill(5) + ".jpg"
+  return out_filename 
+
+def get_rgb_images(seq_dir,output_dir): 
+  if not os.path.exists(output_dir):
+    os.mkdir(output_dir)
+
+  rgb_dir = os.path.join(seq_dir,"camera/images/rgb") 
+  for img_bin in os.listdir(rgb_dir): 
+    filename = parse_img_filename(img_bin)
+    img_bin_path = os.path.join(rgb_dir,img_bin) 
+    out_path = os.path.join(output_dir,filename) 
+    bin_to_jpg(img_bin_path,out_path,1280,800,3) #images are 1280x800 
+
+def get_depth_images(seq_dir,output_dir): 
+  if not os.path.exists(output_dir):
+    os.mkdir(output_dir) 
+  
+  depth_dir = os.path.join(seq_dir,"camera/images/depth")
+  for img_bin in os.listdir(depth_dir): 
+    filename = parse_img_filename(img_bin)
+    img_bin_path = os.path.join(depth_dir,img_bin) 
+    out_path = os.path.join(output_dir,filename) 
+    bin_to_jpg(img_bin_path,out_path,848,480,1)  
 
 # reads raw adc data from bin file 
 # param[in] index: index of the requested frame
@@ -31,7 +87,6 @@ def get_adc_frame(index, seq_dir, params):
                              params['num_chirps_per_frame'],
                              params['num_adc_samples_per_chirp'])
   return frame
-
 
 # reads post-angle-fft heatmap from bin file
 # param[in] index: index of the requested heatmap
@@ -383,7 +438,8 @@ def read_phase_freq_calib(calib_filename):
   freq_cal_mat_str = lines[4].split(':')[1]
   freq_cal_mat_arr = np.array(freq_cal_mat_str.split(',')).astype('float')
   freq_cal_mat = freq_cal_mat_arr.reshape(num_tx, num_rx)
-
+plete.bag
+        - Compressing and removing uncompressed directory: /media/kristen/easystore2/proc
   freq_calib['num_rx'] = num_rx
   freq_calib['num_tx'] = num_tx
   freq_calib['frequency_slope'] = frequency_slope
@@ -475,4 +531,5 @@ def get_cascade_params(calib_dir):
           'phase': phase_calib,
           'frequency': freq_calib} 
 
-
+if __name__ == "__main__":
+  get_depth_images("/media/kristen/easystore2/processed_kyle_bags/kitti/irl/","/media/kristen/easystore2/processed_kyle_bags/kitti/irl/depth_imgs_01")
