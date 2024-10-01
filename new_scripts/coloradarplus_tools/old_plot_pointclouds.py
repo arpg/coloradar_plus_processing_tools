@@ -289,22 +289,21 @@ if __name__ == '__main__':
   lidar_idx = 0
   #radar_idx < len(radar_indices) or 
   while lidar_idx < len(lidar_indices):
-    '''
-      if radar_idx < len(radar_indices) and radar_timestamps[radar_indices[radar_idx]] < lidar_timestamps[lidar_indices[lidar_idx]]:
-      plot_data.append((radar_timestamps[radar_indices[radar_idx]], radar_gt[radar_idx], radar_indices[radar_idx], 'radar'))
-      radar_idx += 1
-    '''
     if lidar_idx < len(lidar_indices):
       plot_data.append((lidar_timestamps[lidar_indices[lidar_idx]], lidar_gt[lidar_idx], lidar_indices[lidar_idx], 'lidar'))
       lidar_idx += 1
 
+    if radar_idx < len(radar_indices) and radar_timestamps[radar_indices[radar_idx]] < lidar_timestamps[lidar_indices[lidar_idx]]:
+        plot_data.append((radar_timestamps[radar_indices[radar_idx]], radar_gt[radar_idx], radar_indices[radar_idx], 'radar'))
+        radar_idx += 1
+    
   # if using heatmap precalculate point locations because they're always the same and there's a ton of them
-  # if args.plot_heatmap: 
-  #   radar_pc_precalc = get_heatmap_points(radar_params)
-  # else:
-  #   radar_pc_precalc = np.random.rand(10,4)
+  if args.plot_heatmap: 
+   radar_pc_precalc = get_heatmap_points(radar_params)
+  else:
+    radar_pc_precalc = np.random.rand(10,4)
 
-  radar_pc_precalc = np.random.rand(10,4)
+  #radar_pc_precalc = np.random.rand(10,4)
   radar_pc = np.random.rand(10,4)
   lidar_pc = np.random.rand(10,5)
   accum_pc = np.empty((0, 5))
@@ -322,7 +321,7 @@ if __name__ == '__main__':
   plots['radar'] = ax.scatter(radar_pc[:,0],
                               radar_pc[:,1],
                               radar_pc[:,2],
-                              c = [],
+                              c = 'r',
                               marker='.',
                               s=0.8,
                               label=radar_label)
