@@ -272,6 +272,7 @@ class BagParser:
         np.savetxt(f'{self.imu_path}/imu_data.txt', imu_data_np)
 
         # Write odometry timestamps and data
+        '''
         odom_timestamps_np = np.array(sorted(self.odom_4x4_ts_data_dict.keys()))
         np.savetxt(f'{self.groundtruth_path}/timestamps.txt', odom_timestamps_np, fmt='%s')
 
@@ -280,6 +281,7 @@ class BagParser:
 
         odom_quat_np = np.array([self.odom_quat_ts_data_dict[timestamp] for timestamp in odom_timestamps_np])
         np.savetxt(f'{self.groundtruth_path}/groundtruth_poses_quat.txt', odom_quat_np) 
+        ''' 
         
         with open(self.camera_path + '/rgb_cam_info.json','w') as f: 
             json.dump(self.rgb_info,f,indent=4) 
