@@ -1,60 +1,115 @@
 #!/usr/bin/env python3
-"""_summary_
-"""
 
 import os
 import numpy as np
 import open3d as o3d
 import matplotlib.pyplot as plt
 
-# TODO: these should go elsewhere
-def load_bin_file(file_path, shape, dtype=np.float32):
-    """
-    Load binary file and reshape it into the desired shape.
-    """
-    return np.fromfile(file_path, dtype=dtype).reshape(shape)
 
-def transform_point_cloud(point_cloud, pose_matrix):
-    """
-    Apply a 4x4 transformation matrix to a point cloud.
-    """
-    # Add homogeneous coordinate to the point cloud
-    ones = np.ones((point_cloud.shape[0], 1))
-    homogeneous_points = np.hstack([point_cloud, ones])
+def visualize_pointcloud(points):
+    pcd = o3d.geometry.PointCloud()
+    pcd.points = o3d.utility.Vector3dVector(points[:, :3])
+    
+    intensity = points[:, 3]
+    intensity_normalized = (intensity - np.min(intensity)) / (np.max(intensity) - np.min(intensity))
+    
+    colors = np.tile(intensity_normalized[:, None], (1, 3))
+    pcd.colors = o3d.utility.Vector3dVector(colors)
+    
+    o3d.visualization.draw_geometries([pcd])
 
-    # Apply transformation
-    transformed_points = homogeneous_points.dot(pose_matrix.T)[:, :3]
-    return transformed_points
 
-class Visualizer():
-    """_summary_
-    """
-    def __init__(self):
-        pass
+def visualize_depth_image(image):
+    plt.imshow(image,cmap='gray')
+    plt.title('Depth Image')
+    plt.axis('off')
+    plt.show()
 
-    def visualize_pointcloud(self, points):
-        pcd = o3d.geometry.PointCloud()
-        pcd.points = o3d.utility.Vector3dVector(points[:, :3])
-        
-        intensity = points[:, 3]
-        intensity_normalized = (intensity - np.min(intensity)) / (np.max(intensity) - np.min(intensity))
-        
-        colors = np.tile(intensity_normalized[:, None], (1, 3))
-        pcd.colors = o3d.utility.Vector3dVector(colors)
-        
-        o3d.visualization.draw_geometries([pcd])
 
-    def visualize_depth_image(self, image):
-        plt.imshow(image,cmap='gray')
-        plt.title('Depth Image')
-        plt.axis('off')
-        plt.show()
+def visualize_rgb_image(image):
+    plt.imshow(image)
+    plt.title('RGB Image')
+    plt.axis('off')
+    plt.show()
 
-    def visualize_rgb_image(self, image):
-        plt.imshow(image)
-        plt.title('RGB Image')
-        plt.axis('off')
-        plt.show()
+
+def visualize_positions(original_positions, interpolated_positions):
+    # Identify non-matching interpolated points
+    interpolated_set = set(map(tuple, interpolated_positions))
+    original_set = set(map(tuple, original_positions))
+    unique_interpolated_positions = np.array([pos for pos in interpolated_set if pos not in original_set])
+
+    # Create Open3D point clouds for unique interpolated positions
+    unique_interpolated_pcd = o3d.geometry.PointCloud()
+    unique_interpolated_pcd.points = o3d.utility.Vector3dVector(unique_interpolated_positions)
+    unique_interpolated_pcd.paint_uniform_color([1, 0, 0])  # Red for unique interpolated
+
+    # Set points for original positions
+    original_pcd = o3d.geometry.PointCloud()
+    original_pcd.points = o3d.utility.Vector3dVector(original_positions)
+    original_pcd.paint_uniform_color([0, 0, 1])  # Blue for original
+
+    # Visualize the unique interpolated points
+    o3d.visualization.draw_geometries([unique_interpolated_pcd, original_pcd],
+                                      window_name='Unique Interpolated Positions',
+                                      width=800, height=600)
+
+
+def visualize_trajectory_with_orientation(odom_list):
+    # Create open3d LineSet for trajectory visualization
+    points = np.array([(odom[0, 3], odom[1, 3], odom[2, 3]) for odom in odom_list])
+    lines = [[i, i + 1] for i in range(len(points) - 1)]
+    line_set = o3d.geometry.LineSet()
+    line_set.points = o3d.utility.Vector3dVector(points)
+    line_set.lines = o3d.utility.Vector2iVector(lines)
+    line_set.paint_uniform_color([0, 0, 1])  # Set line color to blue
+
+    # Create coordinate frames for orientation visualization
+    frames = []
+    for odom in odom_list:
+        frame = o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.1, origin=[0, 0, 0])
+        frame.transform(odom)
+        frames.append(frame)
+
+    # Visualize using open3d
+    o3d.visualization.draw_geometries([line_set, *frames], window_name='Odometry Trajectory with Orientation',
+                                      zoom=0.5, front=[0.5, -0.5, -0.5], lookat=[0, 0, 0], up=[0, 1, 0])
+    
+
+def visualize_frames(original_positions, interpolated_positions, original_orientations, interpolated_orientations):
+    # Identify non-matching interpolated frames
+    interpolated_set = set(map(tuple, interpolated_positions))
+    original_set = set(map(tuple, original_positions))
+    unique_interpolated_positions = np.array([pos for pos in interpolated_set if pos not in original_set])
+
+    # Create Open3D geometries for unique interpolated frames (red)
+    unique_interpolated_frames = []
+    for pos, orient in zip(unique_interpolated_positions, interpolated_orientations):
+        frame = o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.2)
+        frame.translate(pos)
+        rotation_matrix = o3d.geometry.get_rotation_matrix_from_quaternion(orient)
+        frame.rotate(rotation_matrix, center=pos)
+        unique_interpolated_frames.append(frame)
+    
+    # Set frames for original positions (blue)
+    original_frames = []
+    for pos, orient in zip(original_positions, original_orientations):
+        frame = o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.2)
+        frame.translate(pos)
+        rotation_matrix = o3d.geometry.get_rotation_matrix_from_quaternion(orient)
+        frame.rotate(rotation_matrix, center=pos)
+        original_frames.append(frame)
+
+    # Set color for the frames
+    for frame in unique_interpolated_frames:
+        frame.paint_uniform_color([1, 0, 0])  # Red for unique interpolated frames
+    for frame in original_frames:
+        frame.paint_uniform_color([0, 0, 1])  # Blue for original frames
+
+    # Visualize the frames
+    o3d.visualization.draw_geometries(unique_interpolated_frames + original_frames,
+                                      window_name='Unique Interpolated and Original Frames',
+                                      width=800, height=600)
 
 
 def plot_accum_lidar():

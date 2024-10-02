@@ -1,8 +1,11 @@
-import numpy as np 
+#!/usr/bin/env python3
+
+import numpy as np
 import struct
 import os
 import json 
 import cv2 
+
 
 def bin_to_jpg(bin_file, output_jpg, width, height, channels):
     # Step 1: Read the binary file
@@ -31,13 +34,22 @@ def bin_to_jpg(bin_file, output_jpg, width, height, channels):
     print(f"writing {output_jpg} ...")
     cv2.imwrite(output_jpg, img_array)
 
+
+def load_bin_file(file_path, shape, dtype=np.float32):
+    """
+    Load binary file and reshape it into the desired shape.
+    """
+    return np.fromfile(file_path, dtype=dtype).reshape(shape)
+
+
 def parse_img_filename(filename):
   underscore_idx = [i for i,x in enumerate(filename) if x =="_"][-1]
   file_no = filename[underscore_idx+1:-4] 
   out_filename = file_no.zfill(5) + ".jpg"
   return out_filename 
 
-def get_rgb_images(seq_dir,output_dir): 
+
+def load_rgb_images(seq_dir, output_dir): 
   if not os.path.exists(output_dir):
     os.mkdir(output_dir)
 
@@ -48,7 +60,8 @@ def get_rgb_images(seq_dir,output_dir):
     out_path = os.path.join(output_dir,filename) 
     bin_to_jpg(img_bin_path,out_path,1280,800,3) #images are 1280x800 
 
-def get_depth_images(seq_dir,output_dir): 
+
+def load_depth_images(seq_dir,output_dir): 
   if not os.path.exists(output_dir):
     os.mkdir(output_dir) 
   
@@ -59,13 +72,14 @@ def get_depth_images(seq_dir,output_dir):
     out_path = os.path.join(output_dir,filename) 
     bin_to_jpg(img_bin_path,out_path,848,480,1)  
 
+
 # reads raw adc data from bin file 
 # param[in] index: index of the requested frame
 # param[in] base_dir: base directory of the sequence
 # param[in] params: dict object containing radar config parameters
 # return    numpy array containing complex adc samples with dimensions 
 #            num_tx * num_rx * chirps_per_frame * adc_samples_per_chirp
-def get_adc_frame(index, seq_dir, params):
+def load_adc_frame(index, seq_dir, params):
   if params['sensor_type'] == 'cascade':
     filename = seq_dir + '/cascade/adc_samples/data/frame_' + str(index) + '.bin'
   else:
@@ -88,6 +102,7 @@ def get_adc_frame(index, seq_dir, params):
                              params['num_adc_samples_per_chirp'])
   return frame
 
+
 # reads post-angle-fft heatmap from bin file
 # param[in] index: index of the requested heatmap
 # param[in] seq_dir: base directory of the sequence
@@ -96,7 +111,7 @@ def get_adc_frame(index, seq_dir, params):
 #           with dimensions num_elevation_bins * num_azimuth_bins * num_range_bins * 2
 #           where each elevation-azimuth-range bin has 2 values: the peak intensity and
 #           the peak location for the doppler spectrum for that bin
-def get_heatmap(index, seq_dir, params):
+def load_heatmap(index, seq_dir, params):
   if params['sensor_type'] == 'cascade':
     filename = seq_dir + '/cascade/heatmaps/data/heatmap_' + str(index) + '.bin'
   else:
@@ -126,7 +141,7 @@ def get_heatmap(index, seq_dir, params):
 # return    a numpy array containing one point per row, 
 #           lidar point values are [x,y,z,intensity]
 #           radar point values are [x,y,z,intensity,doppler]
-def get_pointcloud(index, seq_dir, params):
+def load_pointcloud(index, seq_dir, params):
   print(f"index: {index}")
   if params['sensor_type'] == 'lidar':
     filename = seq_dir + '/lidar/pointclouds/lidar_pointcloud_' + str(index) + '.bin'
@@ -156,7 +171,7 @@ def get_pointcloud(index, seq_dir, params):
 # param[in] seq_dir: base directory of the sequence
 # param[in] params: dict object containing sensor config parameters
 # return    list of timestamps in seconds as floating point values
-def get_timestamps(seq_dir, params):
+def load_timestamps(seq_dir, params):
   if params['sensor_type'] == 'lidar': 
     filename = seq_dir + '/lidar/timestamps.txt'
   elif params['sensor_type'] == 'imu':
@@ -191,7 +206,7 @@ def get_timestamps(seq_dir, params):
 # param[in] seq_dir: base directory of the sequence
 # return    list of imu measurements where each imu measurement is a dict with two entries:
 #            {'accel': [x,y,z], 'gyro': [x,y,z]}
-def get_imu(seq_dir):
+def load_imu(seq_dir):
   filename = seq_dir + '/imu/imu_data.txt'
   if not os.path.exists(filename):
     print('File ' + filename + ' not found')
@@ -212,7 +227,7 @@ def get_imu(seq_dir):
 # param[in] seq_dir: base directory of the sequence
 # return    list of groundtruth poses where each pose is a dict with two entries:
 #           {'position': [x,y,z], 'orientation': [x,y,z,w]}
-def get_groundtruth(seq_dir):
+def load_groundtruth(seq_dir):
   filename = seq_dir + '/groundtruth/groundtruth_poses_quat.txt'
   if not os.path.exists(filename):
     print('File ' + filename + ' not found')
@@ -234,7 +249,7 @@ def get_groundtruth(seq_dir):
 # param[in] filename: filename for the extrinsic transform file
 # return t: the translation [x,y,z]
 # return r: the rotation [x,y,z,w]
-def read_tf_file(filename):
+def load_tf_file(filename):
   if not os.path.exists(filename):
     print('File ' + filename + ' not found')
     return
@@ -251,7 +266,7 @@ def read_tf_file(filename):
 # reads lidar config and calibration data from a file
 # param[in] calib_dir: base directory for dataset calibration files
 # return params: dict with all lidar config and calibration parameters
-def get_lidar_params(calib_dir):
+def load_lidar_params(calib_dir):
   params = {'sensor_type': 'lidar', 'data_type': 'pointcloud'}
   filename = calib_dir + '/transforms/base_to_lidar.txt'
   #params['translation'], params['rotation'] = read_tf_file(filename)
@@ -263,17 +278,17 @@ def get_lidar_params(calib_dir):
 # reads imu config and calibration data from a file
 # param[in] calib_dir: base directory for dataset calibration files
 # return params: dict with all imu config and calibration parameters
-def get_imu_params(calib_dir):
+def load_imu_params(calib_dir):
   params = {'sensor_type': 'imu'}
   filename = calib_dir + '/transforms/base_to_imu.txt'
-  params['translation'], params['rotation'] = read_tf_file(filename)
+  params['translation'], params['rotation'] = load_tf_file(filename)
   return params
 
 
 # gets config data for groundtruth, doesn't read it from a file 
 # because there's only two parameters and they're always the same
 # return params: dict with the only two needed parameters for groundtruth
-def get_groundtruth_params():
+def load_groundtruth_params():
   return {'sensor_type': 'groundtruth', 'data_type': 'pose'}
 
 
@@ -345,7 +360,7 @@ def read_heatmap_cfg(hm_filename, hm_params):
 # param[in] wave_filename: the filename of the waveform config file
 # param[in] wave_params: dict containing the waveform parameters
 # return wave_params: waveform config dict with waveform config parameters added
-def read_waveform_cfg(wave_filename, wave_params):
+def load_waveform_cfg(wave_filename, wave_params):
   wave_params['data_type'] = 'adc_samples'
 
   with open(wave_filename, mode='r') as file:
@@ -365,7 +380,7 @@ def read_waveform_cfg(wave_filename, wave_params):
 # reads the antenna coupling calibration from the given file
 # param[in] coupling_filename: the filename of the coupling config file
 # return coupling_calib: dict containing antenna coupling calibration data
-def read_coupling_cfg(coupling_filename):
+def load_coupling_cfg(coupling_filename):
   coupling_calib = {}
 
   with open(coupling_filename, mode='r') as file:
@@ -390,7 +405,7 @@ def read_coupling_cfg(coupling_filename):
 # param[in] calib_filename: the filename of the phase/frequency calibration file
 # return phase_calib: dict containing the phase calibration data
 # return freq_calib: dict containing the frequency calibration data
-def read_phase_freq_calib(calib_filename):
+def load_phase_freq_calib(calib_filename):
   phase_calib = {}
   freq_calib = {}
 
@@ -453,7 +468,7 @@ plete.bag
 # gets config and calibration data for the single chip radar sensor
 # param[in] calib_dir: base directory for dataset calibration files
 # return dict including waveform, heatmap, pointcloud, antenna, and coupling config data
-def get_single_chip_params(calib_dir):
+def load_single_chip_params(calib_dir):
   wave_params = {'sensor_type': 'single_chip'}
   hm_params = {'sensor_type': 'single_chip'}
   pc_params = {'sensor_type': 'single_chip', 'data_type': 'pointcloud'}
@@ -471,7 +486,7 @@ def get_single_chip_params(calib_dir):
   pc_params['rotation'] = r
 
   wave_filename = calib_dir + '/single_chip/waveform_cfg.txt'
-  wave_params = read_waveform_cfg(wave_filename, wave_params)
+  wave_params = load_waveform_cfg(wave_filename, wave_params)
 
   hm_filename = calib_dir + '/single_chip/heatmap_cfg.txt'
   hm_params = read_heatmap_cfg(hm_filename, hm_params)
@@ -480,7 +495,7 @@ def get_single_chip_params(calib_dir):
   antenna_cfg = read_antenna_cfg(antenna_filename)
 
   coupling_filename = calib_dir + '/single_chip/coupling_calib.txt'
-  coupling_calib = read_coupling_cfg(coupling_filename)
+  coupling_calib = load_coupling_cfg(coupling_filename)
   
   return {'waveform': wave_params, 
           'heatmap': hm_params, 
@@ -489,11 +504,12 @@ def get_single_chip_params(calib_dir):
           'coupling': coupling_calib}
 
 
+
 # gets config and calibration data for the cascaded radar sensor
 # param[in] calib_dir: base directory for dataset calibration files
 # return dict including waveform, heatmap, antenna, coupling, 
 #             phase, and frequency calibration data
-def get_cascade_params(calib_dir):
+def load_cascade_params(calib_dir):
   wave_params = {'sensor_type': 'cascade'}
   hm_params = {'sensor_type': 'cascade'}
 
@@ -509,7 +525,7 @@ def get_cascade_params(calib_dir):
   hm_params['rotation'] = r
 
   wave_filename = calib_dir + '/cascade/waveform_cfg.txt'
-  wave_params = read_waveform_cfg(wave_filename, wave_params)
+  wave_params = load_waveform_cfg(wave_filename, wave_params)
 
   hm_filename = calib_dir + '/cascade/heatmap_cfg.txt'
   hm_params = read_heatmap_cfg(hm_filename, hm_params)
@@ -522,7 +538,7 @@ def get_cascade_params(calib_dir):
   coupling_calib = {} # placeholder since I haven't done a coupling calibration for the cascade sensor yet
 
   phase_filename = calib_dir + '/cascade/phase_frequency_calib.txt'
-  phase_calib, freq_calib = read_phase_freq_calib(phase_filename)
+  phase_calib, freq_calib = load_phase_freq_calib(phase_filename)
 
   return {'waveform': wave_params, 
           'heatmap': hm_params,  
@@ -531,5 +547,6 @@ def get_cascade_params(calib_dir):
           'phase': phase_calib,
           'frequency': freq_calib} 
 
+
 if __name__ == "__main__":
-  get_depth_images("/media/kristen/easystore2/processed_kyle_bags/kitti/irl/","/media/kristen/easystore2/processed_kyle_bags/kitti/irl/depth_imgs_01")
+  load_depth_images("/media/kristen/easystore2/processed_kyle_bags/kitti/irl/","/media/kristen/easystore2/processed_kyle_bags/kitti/irl/depth_imgs_01")

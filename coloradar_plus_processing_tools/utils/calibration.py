@@ -1,18 +1,24 @@
+#!/usr/bin/env python3
+
 import numpy as np 
 from scipy.fft import fft
 import math
 
 
-# returns sample i for a blackman window of size n
-# param[in] i: sample index
-# param[in] n: size of the window
-# return: value of sample i of a blackman window of size n
-def blackman(i, n)
-  a0 = 0.42
-  a1 = 0.5
-  a2 = 0.08
-  return (a0 - a1 * math.cos((2.0 * math.pi * i) / n)
-    + a2 * math.cos((4.0 * math.pi * i) / n))
+def blackman(i, n):
+    '''
+    returns sample i for a blackman window of size n
+        - param[in] i: sample index
+        - param[in] n: size of the window
+    returns: value of sample i of a blackman window of size n
+    
+    '''
+
+    a0 = 0.42
+    a1 = 0.5
+    a2 = 0.08
+    return (a0 - a1 * math.cos((2.0 * math.pi * i) / n)
+        + a2 * math.cos((4.0 * math.pi * i) / n))
 
 
 # applies antenna coupling calibration

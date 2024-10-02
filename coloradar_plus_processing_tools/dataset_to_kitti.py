@@ -1,17 +1,12 @@
 #!/usr/bin/env python3
-"""
-ColoRadar Processing Tools - crpt_dataset_to_kitti.py
-
-Author: Doncey Albin
-"""
 
 import os
 import numpy as np
 import shutil
 
 # Internal Imports
-from coloradarplus_tools import BagParser
-from coloradarplus_tools import Visualizer
+from coloradar_plus_processing_tools import BagParser
+from coloradar_plus_processing_tools import Visualizer
 
 class DatasetToKitti:
     def __init__(self, crp_config_dict = None):
@@ -39,9 +34,7 @@ class DatasetToKitti:
         print(f"        - Created KITTI-style directory: {kitti_directory_path}")
 
         # Init bagparser object
-        bag_parser = BagParser(visualize_rosbag_data=self.crp_config_dict["display_rosbag_data"], 
-                               log_paths_dict=kitti_paths_dict,
-                               visulizer=self.visualizer)
+        bag_parser = BagParser(log_paths_dict=kitti_paths_dict)
 
         # Parse rosbag data
         bag_path = os.path.join(self.crp_config_dict["main_bag_directory_path"], seq_name, f"{seq_name}_{run_name:02d}_complete.bag")
