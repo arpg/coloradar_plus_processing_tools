@@ -329,7 +329,8 @@ def read_heatmap_cfg(hm_filename, hm_params):
 
   for line in lines:
     vals = line.split()
-
+    print("hm_params: ",hm_params.keys()) 
+    print("vals: ",vals) 
     if vals[0] == 'azimuth_bins' or vals[0] == 'elevation_bins':
       hm_params[vals[0]] = [float(s) for s in vals[1:]]
     elif vals[0] == 'range_bin_width':
@@ -497,7 +498,7 @@ def get_cascade_params(calib_dir):
   wave_params = {'sensor_type': 'cascade'}
   hm_params = {'sensor_type': 'cascade'}
 
-  tf_filename = calib_dir + '/transforms/base_to_cascade.txt'
+  #tf_filename = calib_dir + '/transforms/base_to_cascade.txt'
 
   #t, r = read_tf_file(tf_filename)
   t = np.zeros((3,)) 
@@ -530,6 +531,3 @@ def get_cascade_params(calib_dir):
           'coupling': coupling_calib,
           'phase': phase_calib,
           'frequency': freq_calib} 
-
-if __name__ == "__main__":
-  get_depth_images("/media/kristen/easystore2/processed_kyle_bags/kitti/irl/","/media/kristen/easystore2/processed_kyle_bags/kitti/irl/depth_imgs_01")
