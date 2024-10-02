@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 
 import math
 import numpy as np 
@@ -10,16 +11,7 @@ import argparse
 from time import time
 
 # Internal imports
-from old_dataset_loaders import *
-
-def lerp(q0, q1, t):
-    """
-    Linearly interpolate between two quaternions (q0, q1) by factor t.
-    """
-    q0 = np.array(q0)
-    q1 = np.array(q1)
-    
-    return (1 - t) * q0 + t * q1
+from coloradar_plus_processing_tools import utils
 
 # interpolates poses for the given timestamps
 # param[in] src_poses: list of poses in the form of a dict {'position': [x,y,z], 'orientation: [x,y,z,w]'}
@@ -168,7 +160,7 @@ def animate_plot(i):
   # and load new plot in base sensor rig frame
   if plot_data[i][3] == 'lidar':
     # load lidar pointcloud from file
-    lidar_pc_local = get_pointcloud(plot_data[i][2], args.seq, lidar_params)
+    lidar_pc_local = utils.load_pointcloud(plot_data[i][2], args.seq, lidar_params)
     # downsample for faster plotting
     lidar_pc_local = downsample_pointcloud(lidar_pc_local, 0.2)
     # transform pointcloud to plotting frame
@@ -180,7 +172,7 @@ def animate_plot(i):
   else:
     if args.plot_heatmap:
       # load full radar heatmap from file
-      radar_hm = get_heatmap(plot_data[i][2], args.seq, radar_params)
+      radar_hm = utils.load_heatmap(plot_data[i][2], args.seq, radar_params)
       # assign intensity and doppler values to precalculated heatmap points
       # excluding points below the minimum range bin
       radar_pc_precalc[:,3:] = radar_hm[:,:,args.min_range:,:].reshape(-1,2)
@@ -196,7 +188,7 @@ def animate_plot(i):
       radar_pc_local[:,3] /= radar_pc_local[:,3].max()
     else:
       # load radar pointcloud from file
-      radar_pc_local = get_pointcloud(plot_data[i][2], args.seq, radar_params)
+      radar_pc_local = utils.load_pointcloud(plot_data[i][2], args.seq, radar_params)
     
     # transform to plotting frame
     T_ws = np.dot(R_wb, radar_params['T_bs'])
@@ -246,15 +238,15 @@ if __name__ == '__main__':
     print('warn: pointclouds not available for cascade sensor, setting --plot_heatmap to True')
     args.plot_heatmap = True
 
-  all_radar_params = get_cascade_params(args.calib)
+  all_radar_params = utils.load_cascade_params(args.calib)
 
   if args.plot_heatmap:
     radar_params = all_radar_params['heatmap']
   else:
     radar_params = all_radar_params['pointcloud']
 
-  gt_params = get_groundtruth_params()
-  lidar_params = get_lidar_params(args.calib)
+  gt_params = utils.load_groundtruth_params()
+  lidar_params = utils.load_lidar_params(args.calib)
 
   # make extrinsic transforms as 4x4 transformation matrix
   radar_params['T_bs'] = np.eye(4)
@@ -271,12 +263,12 @@ if __name__ == '__main__':
   gt_label = gt_params['sensor_type'] + ' ' + gt_params['data_type']
 
   # get timestamps for each sensor type
-  radar_timestamps = get_timestamps(args.seq, radar_params)
-  gt_timestamps = get_timestamps(args.seq, gt_params)
-  lidar_timestamps = get_timestamps(args.seq, lidar_params)
+  radar_timestamps = utils.load_timestamps(args.seq, radar_params)
+  gt_timestamps = utils.load_timestamps(args.seq, gt_params)
+  lidar_timestamps = utils.load_timestamps(args.seq, lidar_params)
 
   # get groundtruth poses
-  gt_poses = get_groundtruth(args.seq)
+  gt_poses = utils.load_groundtruth(args.seq)
 
   # interpolate groundtruth poses for each sensor measurement
   #src_poses, src_stamps, tgt_stamps

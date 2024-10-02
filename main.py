@@ -1,16 +1,7 @@
 #!/usr/bin/env python3
-"""
-main.py
-
-Author: Doncey Albin
-
-Description:
-This script processes bags collected for the ColoradarPlus dataset and converts them to KITTI-style format.
-Optionally, it also allows for visualization of the converted files.
-"""
 import yaml
 from tqdm import tqdm
-from coloradarplus_tools import DatasetToKitti
+from coloradar_plus_processing_tools import DatasetToKitti
 
 def parse_config(config_path):
     """_Parser for ColoradarPlus-to-kitti Configuration file._
