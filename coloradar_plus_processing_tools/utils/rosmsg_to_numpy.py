@@ -3,6 +3,41 @@
 import numpy as np
 import sensor_msgs.point_cloud2 as pc2
 from sensor_msgs.msg import CameraInfo
+import json 
+
+def cam_info_to_json(camera_info_msg):
+    # Create a dictionary from the CameraInfo message
+    camera_info_dict = {
+        'header': {
+            'seq': camera_info_msg.header.seq,
+            'stamp': {
+                'secs': camera_info_msg.header.stamp.secs,
+                'nsecs': camera_info_msg.header.stamp.nsecs
+            },
+            'frame_id': camera_info_msg.header.frame_id
+        },
+        'height': camera_info_msg.height,
+        'width': camera_info_msg.width,
+        'distortion_model': camera_info_msg.distortion_model,
+        'D': camera_info_msg.D,  # Distortion coefficients
+        'K': camera_info_msg.K,  # Intrinsic camera matrix
+        'R': camera_info_msg.R,  # Rectification matrix
+        'P': camera_info_msg.P,  # Projection matrix
+        'binning_x': camera_info_msg.binning_x,
+        'binning_y': camera_info_msg.binning_y,
+        'roi': {
+            'x_offset': camera_info_msg.roi.x_offset,
+            'y_offset': camera_info_msg.roi.y_offset,
+            'height': camera_info_msg.roi.height,
+            'width': camera_info_msg.roi.width,
+            'do_rectify': camera_info_msg.roi.do_rectify
+        }
+    }
+
+    # Convert dictionary to JSON string
+    camera_info_json = json.dumps(camera_info_dict, indent=4)
+    return camera_info_json
+
 
 def pointcloud_msg_to_numpy(msg, datatype=np.float32):
     # Decode the point cloud
@@ -11,7 +46,6 @@ def pointcloud_msg_to_numpy(msg, datatype=np.float32):
     pointcloud_numpy = np.array(list(points), dtype=datatype)
 
     return pointcloud_numpy
-
 
 def image_msg_to_numpy(msg, datatype=np.uint8, num_channels=3):
     '''
@@ -46,6 +80,27 @@ def transform_msg_to_numpy(msg, offset=None):
 
     return translation, quaternion
 
+def path_to_numpy(msg): 
+    # Preallocate the ndarray with shape (N, 8), where N is the number of poses
+    path_array = np.zeros((len(msg.poses), 8))
+
+    # Loop over each pose in the path message
+    for i, pose_stamped in enumerate(msg.poses):
+        # Extract timestamp in nanoseconds
+        timestamp_ns = pose_stamped.header.stamp.to_nsec()
+
+        # Extract position (x, y, z)
+        position = pose_stamped.pose.position
+        x, y, z = position.x, position.y, position.z
+
+        # Extract orientation quaternion (qx, qy, qz, qw)
+        orientation = pose_stamped.pose.orientation
+        qx, qy, qz, qw = orientation.x, orientation.y, orientation.z, orientation.w
+
+        # Store in the ndarray (timestamp, x, y, z, qx, qy, qz, qw)
+        path_array[i] = [timestamp_ns, x, y, z, qx, qy, qz, qw]
+
+    return path_array
 
 def pose_msg_to_4x4_numpy(msg):
     '''

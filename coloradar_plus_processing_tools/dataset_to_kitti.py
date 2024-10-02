@@ -6,15 +6,12 @@ import shutil
 
 # Internal Imports
 from coloradar_plus_processing_tools import BagParser
-from coloradar_plus_processing_tools import Visualizer
+#from coloradar_plus_processing_tools import Visualizer
 
 class DatasetToKitti:
     def __init__(self, crp_config_dict = None):
-        self.crp_config_dict = crp_config_dict
-
-        # Init visualizer object
-        self.visualizer = Visualizer()
-
+        self.crp_config_dict = crp_config_dict 
+        
     def convert(self):
         """_Converts bags specified in config file to KITTI-style unstructured dataset._
         """

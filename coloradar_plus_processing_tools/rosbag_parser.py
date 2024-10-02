@@ -6,7 +6,7 @@ np.set_printoptions(suppress=True)
 from array import array
 import rosbag
 from sensor_msgs.msg import CameraInfo
-
+import json 
 from coloradar_plus_processing_tools import utils
 
 class BagParser:
@@ -35,6 +35,7 @@ class BagParser:
         self.ouster_points_topic = "/ouster/points"
         self.imu_data_topic = "/gx5/imu/data"
         self.odom_topic = "/lio_sam/mapping/odometry"
+        self.path_topic = "/lio_sam/mapping/path" 
         self.camera_depth_image_topic = '/camera/depth/image_rect_raw'
         self.camera_depth_info_topic = '/camera/depth/camera_info'
         self.camera_rgb_image_topic = "/camera/color/image_raw"
@@ -44,17 +45,21 @@ class BagParser:
         # self.transforms_topic = "/tf"
         self.static_transforms_topic = "/tf_static"
 
+        
         # Dictionary that maps topics to their respective handling functions. Keys can be used as wanted topics.
         self.topics_handlers_dict = {
             self.ouster_points_topic: self.handle_ouster_pointcloud,
             self.imu_data_topic: self.handle_imu_data,
             self.camera_rgb_image_topic: self.handle_rgb_image,
+            self.camera_rgb_info_topic:self.handle_rgb_cam_info, 
             self.camera_depth_image_topic: self.handle_depth_image,
+            self.camera_depth_info_topic: self.handle_depth_cam_info, 
             self.odom_topic: self.handle_odometry,
+            self.path_topic: self.handle_path, 
             self.cascade_datacube_topic: self.handle_cascade_datacube,
             self.cascade_heatmap_topic: self.handle_cascade_heatmap,
             # self.transforms_topic: self.handle_transforms,
-            self.static_transforms_topic: self.handle_transforms,
+            # self.static_transforms_topic: self.handle_transforms,
         }
 
         # Initialize number of data to 1 so that it corresponds with line in timestamp text file
@@ -82,6 +87,11 @@ class BagParser:
         self.cascade_heatmap_ts_index_dict = {}
         self.cascade_datacube_ts_index_dict = {}
 
+        self.path_msg = None
+        self.rgb_info_initted = False 
+        self.rgb_info = None 
+        self.depth_info_initted = False  
+        self.depth_info =  None 
 
     def handle_ouster_pointcloud(self, msg, msg_header_time):
         pointcloud = utils.pointcloud_msg_to_numpy(msg)
@@ -94,6 +104,10 @@ class BagParser:
         self.ouster_ts_index_dict[msg_header_time] = self.lidar_pc_num
         self.lidar_pc_num += 1
 
+    def handle_rgb_cam_info(self,msg,msg_header_time): 
+        if not self.rgb_info_initted: 
+            self.rgb_info_initted = True 
+            self.rgb_info = utils.cam_info_to_json(msg)  
 
     def handle_rgb_image(self, msg, msg_header_time):
 
@@ -107,6 +121,10 @@ class BagParser:
         self.camera_rgb_ts_index_dict[msg_header_time] = self.camera_rgb_num
         self.camera_rgb_num += 1
 
+    def handle_depth_cam_info(self,msg,msg_header_time): 
+        if not self.depth_info_initted: 
+            self.depth_info_initted = True 
+            self.depth_info = utils.cam_info_to_json(msg) 
 
     def handle_depth_image(self, msg, msg_header_time):
         image = utils.image_msg_to_numpy(msg, datatype=np.uint16, num_channels=1)
@@ -119,9 +137,11 @@ class BagParser:
         self.camera_depth_ts_index_dict[msg_header_time] = self.camera_depth_num
         self.camera_depth_num += 1
 
+    def handle_path(self,msg,msg_header_time): 
+        self.path_msg = msg 
 
     def handle_odometry(self, msg, msg_header_time):
-        odom_4x4_flat, odom_quat_flat = utils.odometry_to_numpy(msg)
+        odom_4x4_flat, odom_quat_flat = utils.odometry_msg_to_numpy(msg)
 
         self.odom_4x4_ts_data_dict[msg_header_time] = odom_4x4_flat
         self.odom_quat_ts_data_dict[msg_header_time] = odom_quat_flat
@@ -137,7 +157,8 @@ class BagParser:
         # Generate config file if not yet exists
         cascade_heatmap_config_file_path = os.path.join(self.calib_cascade_dir_path, 'heatmap_cfg.txt')
         if not os.path.exists(cascade_heatmap_config_file_path):
-            self.save_cascade_heatmap_config(msg)
+            #self.save_cascade_heatmap_config(msg)
+            utils.save_cascade_heatmap_config(msg,cascade_heatmap_config_file_path)
 
         # Decode the heatmap
         cascade_heatmap_array = np.array(msg.image, dtype=np.float32)
@@ -148,12 +169,11 @@ class BagParser:
         self.cascade_heatmap_ts_index_dict[msg_header_time] = self.cascade_heatmap_num
         self.cascade_heatmap_num += 1
 
-
     def handle_cascade_datacube(self, msg, msg_header_time):
         # Generate config file if not yet exists
         cascade_datacube_config_file_path = os.path.join(self.calib_cascade_dir_path, 'waveform_cfg.txt')
         if not os.path.exists(cascade_datacube_config_file_path):
-            self.save_cascade_datacube_config(msg)
+            utils.save_cascade_datacube_config(msg,cascade_datacube_config_file_path)
 
         # Decode the datacube
         cascade_datacube_array = np.array(msg.samples, dtype=np.int16)
@@ -259,4 +279,14 @@ class BagParser:
         np.savetxt(f'{self.groundtruth_path}/groundtruth_poses_4x4.txt', odom_4x4_np)
 
         odom_quat_np = np.array([self.odom_quat_ts_data_dict[timestamp] for timestamp in odom_timestamps_np])
-        np.savetxt(f'{self.groundtruth_path}/groundtruth_poses_quat.txt', odom_quat_np)
+        np.savetxt(f'{self.groundtruth_path}/groundtruth_poses_quat.txt', odom_quat_np) 
+        
+        with open(self.camera_path + '/rgb_cam_info.json','w') as f: 
+            json.dump(self.rgb_info,f,indent=4) 
+
+        with open(self.camera_path + '/depth_cam_info.json','w') as f:
+            json.dump(self.depth_info,f,indent=4)  
+
+        path_np = utils.path_to_numpy(self.path_msg) 
+        np.savetxt(f'{self.groundtruth_path}/path_timestamps.txt', path_np[:,0]) 
+        np.savetxt(f'{self.groundtruth_path}/groundtruth_path.txt',path_np[:,1:]) 

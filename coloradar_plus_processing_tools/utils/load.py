@@ -228,7 +228,8 @@ def load_imu(seq_dir):
 # return    list of groundtruth poses where each pose is a dict with two entries:
 #           {'position': [x,y,z], 'orientation': [x,y,z,w]}
 def load_groundtruth(seq_dir):
-  filename = seq_dir + '/groundtruth/groundtruth_poses_quat.txt'
+  #filename = seq_dir + '/groundtruth/groundtruth_poses_quat.txt'
+  filename = seq_dir + '/groundtruth/groundtruth_path.txt'
   if not os.path.exists(filename):
     print('File ' + filename + ' not found')
     return
