@@ -1,0 +1,13 @@
+# ColoradarPlus Processing Configuration
+
+main_bag_directory_path: "/home/donceykong/Desktop/coloradarplus_data/bags"
+main_kitti_directory_path: "/home/donceykong/Desktop/coloradarplus_data/kitti"
+generate_sequence_run_stats: true
+display_rosbag_data: false
+
+sequences:
+  c4c_garage: 
+    runs: [4]
+
+  ec_courtyard: 
+    runs: [4, 5]
