@@ -80,42 +80,37 @@ def transform_msg_to_numpy(msg, offset=None):
 
     return translation, quaternion
 
+
 def path_to_numpy(msg): 
-    # Preallocate the ndarray with shape (N, 8), where N is the number of poses
-    path_array = np.zeros((len(msg.poses), 8))
+    # Preallocate dicts for the poses in the path
+    path_4x4_ts_data_dict = {}
+    path_quat_ts_data_dict = {}
 
     # Loop over each pose in the path message
-    for i, pose_stamped in enumerate(msg.poses):
-        # Extract timestamp in nanoseconds
-        timestamp_ns = pose_stamped.header.stamp.to_nsec()
+    for pose_msg in msg.poses:
+        msg_header_time = f"{pose_msg.header.stamp.to_sec():.20f}"
+        odom_4x4_flat_numpy, odom_quat_flat_numpy = pose_msg_to_numpy(pose_msg)
 
-        # Extract position (x, y, z)
-        position = pose_stamped.pose.position
-        x, y, z = position.x, position.y, position.z
+        path_4x4_ts_data_dict[msg_header_time] = odom_4x4_flat_numpy
+        path_quat_ts_data_dict[msg_header_time] = odom_quat_flat_numpy
 
-        # Extract orientation quaternion (qx, qy, qz, qw)
-        orientation = pose_stamped.pose.orientation
-        qx, qy, qz, qw = orientation.x, orientation.y, orientation.z, orientation.w
+    return path_4x4_ts_data_dict, path_quat_ts_data_dict
 
-        # Store in the ndarray (timestamp, x, y, z, qx, qy, qz, qw)
-        path_array[i] = [timestamp_ns, x, y, z, qx, qy, qz, qw]
 
-    return path_array
-
-def pose_msg_to_4x4_numpy(msg):
+def pose_msg_to_4x4_numpy(pose_msg):
     '''
     
     '''
     odom_4x4_numpy = np.zeros((4, 4))
-    odom_4x4_numpy[0, 3] = msg.pose.pose.position.x
-    odom_4x4_numpy[1, 3] = msg.pose.pose.position.y
-    odom_4x4_numpy[2, 3] = msg.pose.pose.position.z
+    odom_4x4_numpy[0, 3] = pose_msg.pose.position.x
+    odom_4x4_numpy[1, 3] = pose_msg.pose.position.y
+    odom_4x4_numpy[2, 3] = pose_msg.pose.position.z
     odom_4x4_numpy[3, 3] = 1
 
-    x = msg.pose.pose.orientation.x
-    y = msg.pose.pose.orientation.y
-    z = msg.pose.pose.orientation.z
-    w = msg.pose.pose.orientation.w
+    x = pose_msg.pose.orientation.x
+    y = pose_msg.pose.orientation.y
+    z = pose_msg.pose.orientation.z
+    w = pose_msg.pose.orientation.w
     s = x*x + y*y + z*z + w*w
 
     if s == 0:
@@ -142,22 +137,26 @@ def pose_msg_to_4x4_numpy(msg):
     return odom_4x4_numpy
 
 
-def odometry_msg_to_numpy(msg):
+def pose_msg_to_quat_numpy(pose_msg): 
+    odom_quat_np = np.asarray([pose_msg.pose.position.x, 
+                               pose_msg.pose.position.y, 
+                               pose_msg.pose.position.z,
+                               pose_msg.pose.orientation.x,
+                               pose_msg.pose.orientation.y,
+                               pose_msg.pose.orientation.z,
+                               pose_msg.pose.orientation.w])
+    return odom_quat_np
+
+
+def pose_msg_to_numpy(pose_msg):
     '''
     Returns flattened pose messages with 4x4 style and quaternion style.
 
     '''
-
-    odom_4x4_flat_numpy = pose_msg_to_4x4_numpy(msg).flatten()
-    odom_quat_flat_numpy = np.asarray([msg.pose.pose.position.x, 
-                                       msg.pose.pose.position.y, 
-                                       msg.pose.pose.position.z,
-                                       msg.pose.pose.orientation.x,
-                                       msg.pose.pose.orientation.y,
-                                       msg.pose.pose.orientation.z,
-                                       msg.pose.pose.orientation.w])
+    odom_4x4_flat_np = pose_msg_to_4x4_numpy(pose_msg).flatten()
+    odom_quat_np = pose_msg_to_quat_numpy(pose_msg)
     
-    return odom_4x4_flat_numpy, odom_quat_flat_numpy
+    return odom_4x4_flat_np, odom_quat_np
 
 
 def imu_msg_to_numpy(msg):
