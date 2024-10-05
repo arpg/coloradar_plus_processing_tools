@@ -15,22 +15,6 @@ class BagParser:
         for key, value in log_paths_dict.items():
             setattr(self, key, value)
 
-        # # Set paths for config
-        # self.calib_trans_dir_path = log_paths_dict['calib_trans_dir_path']
-        # self.calib_cascade_dir_path = log_paths_dict['calib_cascade_dir_path']
-        # # Set paths for run
-        # self.lidar_path = log_paths_dict['lidar_path']
-        # self.lidar_pc_bin_path = log_paths_dict['lidar_pc_bin_path']
-        # self.camera_path = log_paths_dict['camera_path']
-        # self.camera_rgb_path = log_paths_dict['camera_rgb_path']
-        # self.camera_depth_path = log_paths_dict['camera_depth_path']
-        # self.groundtruth_path = log_paths_dict['groundtruth_path']
-        # self.imu_path = log_paths_dict['imu_path']
-        # self.cascade_datacube_path = log_paths_dict['cascade_datacube_path']
-        # self.cascade_datacube_data_path = log_paths_dict['cascade_datacube_data_path']
-        # self.cascade_heatmap_path = log_paths_dict['cascade_heatmap_path']
-        # self.cascade_heatmap_data_path = log_paths_dict['cascade_heatmap_data_path']
-
         # Set topics
         self.ouster_points_topic = "/ouster/points"
         self.imu_data_topic = "/gx5/imu/data"
@@ -82,6 +66,8 @@ class BagParser:
         self.imu_ts_data_dict = {}        
         self.odom_4x4_ts_data_dict = {}
         self.odom_quat_ts_data_dict = {}
+        self.fin_path_4x4_ts_data_dict = {}
+        self.fin_path_quat_ts_data_dict = {}
         self.camera_depth_ts_index_dict = {}   
         self.camera_rgb_ts_index_dict = {}
         self.cascade_heatmap_ts_index_dict = {}
@@ -137,11 +123,11 @@ class BagParser:
         self.camera_depth_ts_index_dict[msg_header_time] = self.camera_depth_num
         self.camera_depth_num += 1
 
-    def handle_path(self,msg,msg_header_time): 
-        self.path_msg = msg 
+    def handle_path(self, msg, msg_header_time=None): 
+        self.path_msg = msg
 
     def handle_odometry(self, msg, msg_header_time):
-        odom_4x4_flat, odom_quat_flat = utils.odometry_msg_to_numpy(msg)
+        odom_4x4_flat, odom_quat_flat = utils.pose_msg_to_numpy(msg.pose)
 
         self.odom_4x4_ts_data_dict[msg_header_time] = odom_4x4_flat
         self.odom_quat_ts_data_dict[msg_header_time] = odom_quat_flat
@@ -232,6 +218,9 @@ class BagParser:
             # Dispatch message to the corresponding handler function
             self.topics_handlers_dict[topic](msg, msg_header_time)
 
+        # Assign final path attributes after bag has been completely read
+        self.fin_path_4x4_ts_data_dict, self.fin_path_quat_ts_data_dict = utils.path_to_numpy(self.path_msg)
+
         # Close the bag file
         bag.close()
 
@@ -272,23 +261,28 @@ class BagParser:
         np.savetxt(f'{self.imu_path}/imu_data.txt', imu_data_np)
 
         # Write odometry timestamps and data
-        '''
-        odom_timestamps_np = np.array(sorted(self.odom_4x4_ts_data_dict.keys()))
-        np.savetxt(f'{self.groundtruth_path}/timestamps.txt', odom_timestamps_np, fmt='%s')
+        # odom_timestamps_np = np.array(sorted(self.odom_4x4_ts_data_dict.keys()))
+        # np.savetxt(f'{self.groundtruth_path}/timestamps.txt', odom_timestamps_np, fmt='%s')
 
-        odom_4x4_np = np.array([self.odom_4x4_ts_data_dict[timestamp] for timestamp in odom_timestamps_np])
-        np.savetxt(f'{self.groundtruth_path}/groundtruth_poses_4x4.txt', odom_4x4_np)
+        # odom_4x4_np = np.array([self.odom_4x4_ts_data_dict[timestamp] for timestamp in odom_timestamps_np])
+        # np.savetxt(f'{self.groundtruth_path}/groundtruth_poses_4x4.txt', odom_4x4_np)
 
-        odom_quat_np = np.array([self.odom_quat_ts_data_dict[timestamp] for timestamp in odom_timestamps_np])
-        np.savetxt(f'{self.groundtruth_path}/groundtruth_poses_quat.txt', odom_quat_np) 
-        ''' 
-        
+        # odom_quat_np = np.array([self.odom_quat_ts_data_dict[timestamp] for timestamp in odom_timestamps_np])
+        # np.savetxt(f'{self.groundtruth_path}/groundtruth_poses_quat.txt', odom_quat_np) 
+
+        # Write final path timestamps and data to txt files
+        fin_path_timestamps_np = np.array(sorted(self.fin_path_4x4_ts_data_dict.keys()))
+        np.savetxt(f'{self.groundtruth_path}/final_path_poses_timestamps.txt', fin_path_timestamps_np, fmt='%s')
+
+        fin_path_4x4_np = np.array([self.fin_path_4x4_ts_data_dict[timestamp] for timestamp in fin_path_timestamps_np])
+        np.savetxt(f'{self.groundtruth_path}/groundtruth_final_path_poses_4x4.txt', fin_path_4x4_np)
+
+        fin_path_quat_np = np.array([self.fin_path_quat_ts_data_dict[timestamp] for timestamp in fin_path_timestamps_np])
+        np.savetxt(f'{self.groundtruth_path}/groundtruth_final_path_poses.txt', fin_path_quat_np) 
+
+        # Save Camera calib info 
         with open(self.camera_path + '/rgb_cam_info.json','w') as f: 
             json.dump(self.rgb_info,f,indent=4) 
 
         with open(self.camera_path + '/depth_cam_info.json','w') as f:
-            json.dump(self.depth_info,f,indent=4)  
-
-        path_np = utils.path_to_numpy(self.path_msg) 
-        np.savetxt(f'{self.groundtruth_path}/path_timestamps.txt', path_np[:,0]) 
-        np.savetxt(f'{self.groundtruth_path}/groundtruth_path.txt',path_np[:,1:]) 
+            json.dump(self.depth_info,f,indent=4)   
