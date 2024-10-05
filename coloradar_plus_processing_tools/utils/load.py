@@ -112,28 +112,19 @@ def load_adc_frame(index, seq_dir, params):
 #           where each elevation-azimuth-range bin has 2 values: the peak intensity and
 #           the peak location for the doppler spectrum for that bin
 def load_heatmap(index, seq_dir, params):
-  if params['sensor_type'] == 'cascade':
-    filename = seq_dir + '/cascade/heatmaps/data/heatmap_' + str(index) + '.bin'
-  else:
-    filename = seq_dir + '/single_chip/heatmaps/data/heatmap_' + str(index) + '.bin'
+  filename = seq_dir + '/cascade/heatmaps/data/heatmap_' + str(index) + '.bin'
 
   if not os.path.exists(filename):
     print('File ' + filename + ' not found')
     return None
-
-  with open(filename, mode='rb') as file: 
-    frame_bytes = file.read()
-
-  frame_vals = struct.unpack(str(len(frame_bytes) // 4)+'f', frame_bytes)
-  frame_vals = np.array(frame_vals)
-
-  frame = frame_vals.reshape((params['num_elevation_bins'],
-                              params['num_azimuth_bins'],
-                              params['num_range_bins'],
-                              2)) # 2 vals for each bin (doppler peak intensity and peak location)
-  return frame
-
-
+  else:
+    with open(filename, mode='rb') as file: 
+      frame_bytes = file.read()
+    frame_vals = struct.unpack(str(len(frame_bytes) // 4)+'f', frame_bytes)
+    frame_vals = np.array(frame_vals)
+    frame = frame_vals.reshape((params['num_elevation_bins'], params['num_azimuth_bins'], params['num_range_bins'], 2)) # 2 vals for each bin (doppler peak intensity and peak location)
+    return frame
+    
 # reads pointcloud from bin file
 # param[in] index: index of the requested pointcloud
 # param[in] seq_dir: base directory of the sequence
@@ -145,8 +136,6 @@ def load_pointcloud(index, seq_dir, params):
   print(f"index: {index}")
   if params['sensor_type'] == 'lidar':
     filename = seq_dir + '/lidar/pointclouds/lidar_pointcloud_' + str(index) + '.bin'
-  # else:
-  #   filename = seq_dir + 'single_chip/pointclouds/data/radar_pointcloud_' + str(index) + '.bin'
 
   if not os.path.exists(filename):
     print('File ' + filename + ' not found')
