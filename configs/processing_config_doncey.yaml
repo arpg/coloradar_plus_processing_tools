@@ -6,8 +6,11 @@ generate_sequence_run_stats: true
 display_rosbag_data: false
 
 sequences:
-  c4c_garage: 
+  lobby: 
     runs: [4]
 
-  ec_courtyard: 
-    runs: [4, 5]
+  # c4c_garage: 
+  #   runs: [4]
+
+  # ec_courtyard: 
+  #   runs: [4, 5]
