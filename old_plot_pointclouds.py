@@ -162,37 +162,37 @@ def animate_plot(i):
     # load lidar pointcloud from file
     lidar_pc_local = utils.load_pointcloud(plot_data[i][2], args.seq, lidar_params)
     # downsample for faster plotting
-    lidar_pc_local = downsample_pointcloud(lidar_pc_local, 0.8)
+    lidar_pc_local = downsample_pointcloud(lidar_pc_local, vox_size=0.1)
     # transform pointcloud to plotting frame
     T_ws = np.dot(R_wb, lidar_params['T_bs'])
     lidar_pc = transform_pcl(lidar_pc_local, T_ws)
-    # accum_pc = np.concatenate((accum_pc, lidar_pc), axis=0)
+    accum_pc = np.concatenate((accum_pc, lidar_pc), axis=0)
     # accum_pc = accum_pc[accum_pc[:, 2] <= 0.5]
-    # accum_pc = downsample_pointcloud(accum_pc, 0.8)
-  # else:
-  #   if args.plot_heatmap:
-  #     # load full radar heatmap from file
-  #     radar_hm = utils.load_heatmap(plot_data[i][2], args.seq, radar_params)
-  #     # assign intensity and doppler values to precalculated heatmap points
-  #     # excluding points below the minimum range bin
-  #     radar_pc_precalc[:,3:] = radar_hm[:,:,args.min_range:,:].reshape(-1,2)
-  #     # downsample using voxel grid filter for faster plotting
-  #     radar_pc_local = downsample_pointcloud(radar_pc_precalc, 0.3)
-  #     # normalize intensity values 
-  #     radar_pc_local[:,3] -= radar_pc_local[:,3].min()
-  #     radar_pc_local[:,3] /= radar_pc_local[:,3].max()
-  #     # remove points with intensity below the threshold value
-  #     radar_pc_local = radar_pc_local[radar_pc_local[:,3] > args.threshold]
-  #     # re-normalize intensity values after removing below-threshold points
-  #     radar_pc_local[:,3] -= radar_pc_local[:,3].min()
-  #     radar_pc_local[:,3] /= radar_pc_local[:,3].max()
-  #   else:
-  #     # load radar pointcloud from file
-  #     radar_pc_local = utils.load_pointcloud(plot_data[i][2], args.seq, radar_params)
+    accum_pc = downsample_pointcloud(accum_pc, vox_size=0.5)
+  else:
+    if args.plot_heatmap:
+      # load full radar heatmap from file
+      radar_hm = utils.load_heatmap(plot_data[i][2], args.seq, radar_params)
+      # assign intensity and doppler values to precalculated heatmap points
+      # excluding points below the minimum range bin
+      radar_pc_precalc[:,3:] = radar_hm[:,:,args.min_range:,:].reshape(-1,2)
+      # downsample using voxel grid filter for faster plotting
+      radar_pc_local = downsample_pointcloud(radar_pc_precalc, 0.3)
+      # normalize intensity values 
+      radar_pc_local[:,3] -= radar_pc_local[:,3].min()
+      radar_pc_local[:,3] /= radar_pc_local[:,3].max()
+      # remove points with intensity below the threshold value
+      radar_pc_local = radar_pc_local[radar_pc_local[:,3] > args.threshold]
+      # re-normalize intensity values after removing below-threshold points
+      radar_pc_local[:,3] -= radar_pc_local[:,3].min()
+      radar_pc_local[:,3] /= radar_pc_local[:,3].max()
+    else:
+      # load radar pointcloud from file
+      radar_pc_local = utils.load_pointcloud(plot_data[i][2], args.seq, radar_params)
     
-  #   # transform to plotting frame
-  #   T_ws = np.dot(R_wb, radar_params['T_bs'])
-  #   radar_pc = transform_pcl(radar_pc_local, T_ws)
+    # transform to plotting frame
+    T_ws = np.dot(R_wb, radar_params['T_bs'])
+    radar_pc = transform_pcl(radar_pc_local, T_ws)
 
   # translate pointcloud that wasn't updated
   if i > 1:
