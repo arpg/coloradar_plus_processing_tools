@@ -1,0 +1,6 @@
+TODO:
+- Integrate the rest of the code & remove examples.py
+- Save Camera info topic to txt files
+- Use liosam path topic for groundtruth poses
+- Fix tfs in calib
+- Zip calib dir

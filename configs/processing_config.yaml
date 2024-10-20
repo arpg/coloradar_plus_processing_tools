@@ -1,0 +1,10 @@
+# ColoradarPlus Processing Configuration
+
+main_bag_directory_path: "/media/kristen/easystore2/processed_kyle_bags/tmp"
+main_kitti_directory_path: "/media/kristen/easystore2/processed_kyle_bags/kitti_new"
+generate_sequence_run_stats: true
+display_rosbag_data: false
+
+sequences:
+  irl: 
+    runs: [1,2,3,4,5]
