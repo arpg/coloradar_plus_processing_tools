@@ -43,7 +43,7 @@ class BagParser:
             self.cascade_datacube_topic: self.handle_cascade_datacube,
             self.cascade_heatmap_topic: self.handle_cascade_heatmap,
             # self.transforms_topic: self.handle_transforms,
-            # self.static_transforms_topic: self.handle_transforms,
+            self.static_transforms_topic: self.handle_transforms,
         }
 
         # Initialize number of data to 1 so that it corresponds with line in timestamp text file
@@ -140,11 +140,11 @@ class BagParser:
 
 
     def handle_cascade_heatmap(self, msg, msg_header_time):
-        # Generate config file if not yet exists
-        cascade_heatmap_config_file_path = os.path.join(self.calib_cascade_dir_path, 'heatmap_cfg.txt')
-        if not os.path.exists(cascade_heatmap_config_file_path):
-            #self.save_cascade_heatmap_config(msg)
-            utils.save_cascade_heatmap_config(msg,cascade_heatmap_config_file_path)
+        # # Generate config file if not yet exists
+        # cascade_heatmap_config_file_path = os.path.join(self.calib_cascade_dir_path, 'heatmap_cfg.txt')
+        # if not os.path.exists(cascade_heatmap_config_file_path):
+        #     #self.save_cascade_heatmap_config(msg)
+        #     utils.save_cascade_heatmap_config(msg,cascade_heatmap_config_file_path)
 
         # Decode the heatmap
         cascade_heatmap_array = np.array(msg.image, dtype=np.float32)
@@ -156,10 +156,10 @@ class BagParser:
         self.cascade_heatmap_num += 1
 
     def handle_cascade_datacube(self, msg, msg_header_time):
-        # Generate config file if not yet exists
-        cascade_datacube_config_file_path = os.path.join(self.calib_cascade_dir_path, 'waveform_cfg.txt')
-        if not os.path.exists(cascade_datacube_config_file_path):
-            utils.save_cascade_datacube_config(msg,cascade_datacube_config_file_path)
+        # # Generate config file if not yet exists
+        # cascade_datacube_config_file_path = os.path.join(self.calib_cascade_dir_path, 'waveform_cfg.txt')
+        # if not os.path.exists(cascade_datacube_config_file_path):
+        #     utils.save_cascade_datacube_config(msg,cascade_datacube_config_file_path)
 
         # Decode the datacube
         cascade_datacube_array = np.array(msg.samples, dtype=np.int16)
@@ -169,7 +169,6 @@ class BagParser:
         cascade_datacube_array.tofile(cascade_datacube_filename)
         self.cascade_datacube_ts_index_dict[msg_header_time] = self.cascade_datacube_num
         self.cascade_datacube_num += 1
-
 
     # def handle_transforms(self, msg, msg_time):
     #     if hasattr(msg, 'transforms'):
@@ -199,8 +198,8 @@ class BagParser:
     #                 filename = f'{self.calib_trans_dir_path}/lidar_to_imu.txt'
     # #           
     #             if filename is not None:
-    #                 trans, quat = transform_to_numpy(transform)
-    #                 save_transform(trans, quat, filename)
+    #                 trans, quat = utils.transform_msg_to_numpy(transform)
+    #                 utils.save_transform(trans, quat, filename)
 
 
     def read_bag(self, rosbag_path):
@@ -272,13 +271,13 @@ class BagParser:
 
         # Write final path timestamps and data to txt files
         fin_path_timestamps_np = np.array(sorted(self.fin_path_4x4_ts_data_dict.keys()))
-        np.savetxt(f'{self.groundtruth_path}/final_path_poses_timestamps.txt', fin_path_timestamps_np, fmt='%s')
+        np.savetxt(f'{self.groundtruth_path}/timestamps.txt', fin_path_timestamps_np, fmt='%s')
 
-        fin_path_4x4_np = np.array([self.fin_path_4x4_ts_data_dict[timestamp] for timestamp in fin_path_timestamps_np])
-        np.savetxt(f'{self.groundtruth_path}/groundtruth_final_path_poses_4x4.txt', fin_path_4x4_np)
+        # fin_path_4x4_np = np.array([self.fin_path_4x4_ts_data_dict[timestamp] for timestamp in fin_path_timestamps_np])
+        # np.savetxt(f'{self.groundtruth_path}/groundtruth_final_path_poses_4x4.txt', fin_path_4x4_np)
 
         fin_path_quat_np = np.array([self.fin_path_quat_ts_data_dict[timestamp] for timestamp in fin_path_timestamps_np])
-        np.savetxt(f'{self.groundtruth_path}/groundtruth_final_path_poses.txt', fin_path_quat_np) 
+        np.savetxt(f'{self.groundtruth_path}/groundtruth_poses.txt', fin_path_quat_np) 
 
         # Save Camera calib info 
         with open(self.camera_path + '/rgb_cam_info.json','w') as f: 

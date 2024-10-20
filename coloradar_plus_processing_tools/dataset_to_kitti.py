@@ -34,7 +34,7 @@ class DatasetToKitti:
         bag_parser = BagParser(log_paths_dict=kitti_paths_dict)
 
         # Parse rosbag data
-        bag_path = os.path.join(self.crp_config_dict["main_bag_directory_path"], seq_name, f"{seq_name}_{run_name:02d}_complete.bag")
+        bag_path = os.path.join(self.crp_config_dict["main_bag_directory_path"], seq_name, f"{seq_name}_run{run_name:01d}.bag")
         print(f"        - Parsing rosbag: {bag_path}")
         bag_parser.read_bag(rosbag_path=bag_path)
 
@@ -50,7 +50,7 @@ class DatasetToKitti:
     def create_run_kitti_directory(self, seq_name, run_name):
         # Make sure base directory for run exists or create it
         root_kitti_dir = self.crp_config_dict["main_kitti_directory_path"]
-        formatted_run_name = f"{seq_name}_{run_name:02d}"
+        formatted_run_name = f"{seq_name}_run{run_name:01d}"
         directory_path = os.path.join(root_kitti_dir, seq_name, formatted_run_name)
 
         # Dictionary to hold all necessary subdirectory paths
