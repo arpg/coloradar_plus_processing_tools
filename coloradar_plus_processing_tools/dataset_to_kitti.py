@@ -41,11 +41,11 @@ class DatasetToKitti:
         # Save data
         bag_parser.write_data_to_files()
 
-        # Compress kitti-style directory and delete uncompressed
-        print(f"        - Compressing and removing uncompressed directory: {kitti_directory_path}")
-        compressed_path = shutil.make_archive(kitti_directory_path, 'zip', kitti_directory_path)
-        shutil.rmtree(kitti_directory_path)
-        print(f"        - Run {run_name} processed and compressed to {compressed_path}")
+        # # Compress kitti-style directory and delete uncompressed
+        # print(f"        - Compressing and removing uncompressed directory: {kitti_directory_path}")
+        # compressed_path = shutil.make_archive(kitti_directory_path, 'zip', kitti_directory_path)
+        # shutil.rmtree(kitti_directory_path)
+        # print(f"        - Run {run_name} processed and compressed to {compressed_path}")
 
     def create_run_kitti_directory(self, seq_name, run_name):
         # Make sure base directory for run exists or create it
