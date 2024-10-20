@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import numpy as np
-
+from scipy.spatial.transform import Rotation as R
 
 def get_quat_orientation(quat):
     """

@@ -102,7 +102,6 @@ def load_adc_frame(index, seq_dir, params):
                              params['num_adc_samples_per_chirp'])
   return frame
 
-
 # reads post-angle-fft heatmap from bin file
 # param[in] index: index of the requested heatmap
 # param[in] seq_dir: base directory of the sequence
@@ -122,7 +121,9 @@ def load_heatmap(index, seq_dir, params):
       frame_bytes = file.read()
     frame_vals = struct.unpack(str(len(frame_bytes) // 4)+'f', frame_bytes)
     frame_vals = np.array(frame_vals)
+    print(f"heatmap shape: {frame_vals.shape}")
     frame = frame_vals.reshape((params['num_elevation_bins'], params['num_azimuth_bins'], params['num_range_bins'], 2)) # 2 vals for each bin (doppler peak intensity and peak location)
+    # frame = np.random.rand(10,4)
     return frame
     
 # reads pointcloud from bin file
@@ -151,8 +152,8 @@ def load_pointcloud(index, seq_dir, params):
   cloud_vals = np.array(cloud_vals)
 
   if params['sensor_type'] == 'lidar':
-    cloud = cloud_vals.reshape((-1,5))
-    cloud = cloud[:, :5]
+    cloud = cloud_vals.reshape((-1, 4))
+    cloud = cloud[:, :4]
   return cloud
 
 
@@ -211,6 +212,28 @@ def load_imu(seq_dir):
 
   return imu_data
 
+from scipy.spatial.transform import Rotation
+def get_sensor_poses_from_gt(gt_data, sensor_params):
+  tranformed_sensor_poses = []
+  for gt_pose in gt_data:
+    # print(f"gt_pose: {gt_pose}")
+    tranformed_sensor_pose = {}
+
+    gt_pose_4x4 = np.eye(4)
+    gt_pose_4x4[:3,3] = gt_pose['position']
+    gt_pose_4x4[:3,:3] = Rotation.from_quat(gt_pose['orientation']).as_matrix()
+
+    sensor_to_base_4x4 = np.eye(4)
+    sensor_to_base_4x4[:3,3] = sensor_params['translation']
+    sensor_to_base_4x4[:3,:3] = Rotation.from_quat(sensor_params['rotation']).as_matrix()
+
+    sensor_pose_global = gt_pose_4x4 @ sensor_to_base_4x4
+
+    tranformed_sensor_pose['position'] = sensor_pose_global[:3,3]
+    tranformed_sensor_pose['orientation'] = Rotation.from_matrix(sensor_pose_global[:3, :3]).as_quat()
+    tranformed_sensor_poses.append(tranformed_sensor_pose)
+
+  return tranformed_sensor_poses
 
 # reads all groundtruth poses from file
 # param[in] seq_dir: base directory of the sequence
@@ -218,7 +241,7 @@ def load_imu(seq_dir):
 #           {'position': [x,y,z], 'orientation': [x,y,z,w]}
 def load_groundtruth(seq_dir):
   #filename = seq_dir + '/groundtruth/groundtruth_poses_quat.txt'
-  filename = seq_dir + '/groundtruth/groundtruth_path.txt'
+  filename = seq_dir + '/groundtruth/groundtruth_poses.txt'
   if not os.path.exists(filename):
     print('File ' + filename + ' not found')
     return
@@ -259,9 +282,9 @@ def load_tf_file(filename):
 def load_lidar_params(calib_dir):
   params = {'sensor_type': 'lidar', 'data_type': 'pointcloud'}
   filename = calib_dir + '/transforms/base_to_lidar.txt'
-  #params['translation'], params['rotation'] = read_tf_file(filename)
-  params['translation'] = np.zeros((3,)) 
-  params['rotation'] = np.zeros((4,)); params['rotation'][3] = 1 
+  params['translation'], params['rotation'] = load_tf_file(filename)
+  # params['translation'] = np.zeros((3,)) 
+  # params['rotation'] = np.zeros((4,)); params['rotation'][3] = 1 
   return params
 
 
@@ -334,8 +357,8 @@ def read_heatmap_cfg(hm_filename, hm_params):
 
   for line in lines:
     vals = line.split()
-    print("hm_params: ",hm_params.keys()) 
-    print("vals: ",vals) 
+    # print("hm_params: ",hm_params.keys()) 
+    # print("vals: ",vals) 
     if vals[0] == 'azimuth_bins' or vals[0] == 'elevation_bins':
       hm_params[vals[0]] = [float(s) for s in vals[1:]]
     elif vals[0] == 'range_bin_width':
@@ -404,13 +427,13 @@ def load_phase_freq_calib(calib_filename):
     data = json.load(file) 
   data = data['antennaCalib'] 
 
-  print("data: ",data)
+  # print("data: ",data)
   phase_cal_mat_arr = np.array(data['frequencyCalibrationMatrix']) 
-  print("phase_cal_mat_arr:",phase_cal_mat_arr.shape)
+  # print("phase_cal_mat_arr:",phase_cal_mat_arr.shape)
   phase_cal_mat = phase_cal_mat_arr.reshape(int(data['numTx']),int(data['numRx'])) 
   phase_cal_mat_arr = phase_cal_mat_arr[:-1:2] + 1j * phase_cal_mat_arr[1::2]
-  print("phase_cal_mat_arr: ",phase_cal_mat_arr)
-  print("phase_cal_mat_arr.shape: ",phase_cal_mat_arr.shape)
+  # print("phase_cal_mat_arr: ",phase_cal_mat_arr)
+  # print("phase_cal_mat_arr.shape: ",phase_cal_mat_arr.shape)
   
 
   phase_calib['num_rx'] = data['numRx']
@@ -456,46 +479,6 @@ plete.bag
   return phase_calib, freq_calib
 
 
-# gets config and calibration data for the single chip radar sensor
-# param[in] calib_dir: base directory for dataset calibration files
-# return dict including waveform, heatmap, pointcloud, antenna, and coupling config data
-def load_single_chip_params(calib_dir):
-  wave_params = {'sensor_type': 'single_chip'}
-  hm_params = {'sensor_type': 'single_chip'}
-  pc_params = {'sensor_type': 'single_chip', 'data_type': 'pointcloud'}
-
-  # tf_filename = calib_dir + '/transforms/base_to_single_chip.txt'
-
-  t = np.zeros([3,])
-  r = np.array([0, 0, 0, 1]) #read_tf_file(tf_filename)
-
-  wave_params['translation'] = t
-  wave_params['rotation'] = r
-  hm_params['translation'] = t
-  hm_params['rotation'] = r
-  pc_params['translation'] = t
-  pc_params['rotation'] = r
-
-  wave_filename = calib_dir + '/single_chip/waveform_cfg.txt'
-  wave_params = load_waveform_cfg(wave_filename, wave_params)
-
-  hm_filename = calib_dir + '/single_chip/heatmap_cfg.txt'
-  hm_params = read_heatmap_cfg(hm_filename, hm_params)
-
-  antenna_filename = calib_dir + '/single_chip/antenna_cfg.txt'
-  antenna_cfg = read_antenna_cfg(antenna_filename)
-
-  coupling_filename = calib_dir + '/single_chip/coupling_calib.txt'
-  coupling_calib = load_coupling_cfg(coupling_filename)
-  
-  return {'waveform': wave_params, 
-          'heatmap': hm_params, 
-          'pointcloud': pc_params, 
-          'antenna': antenna_cfg, 
-          'coupling': coupling_calib}
-
-
-
 # gets config and calibration data for the cascaded radar sensor
 # param[in] calib_dir: base directory for dataset calibration files
 # return dict including waveform, heatmap, antenna, coupling, 
@@ -504,11 +487,9 @@ def load_cascade_params(calib_dir):
   wave_params = {'sensor_type': 'cascade'}
   hm_params = {'sensor_type': 'cascade'}
 
-  #tf_filename = calib_dir + '/transforms/base_to_cascade.txt'
+  tf_filename = calib_dir + '/transforms/base_to_radar.txt'
 
-  #t, r = read_tf_file(tf_filename)
-  t = np.zeros((3,)) 
-  r = np.zeros((4,)); r[3] = 1 
+  t, r = load_tf_file(tf_filename)
 
   wave_params['translation'] = t
   wave_params['rotation'] = r
@@ -537,7 +518,3 @@ def load_cascade_params(calib_dir):
           'coupling': coupling_calib,
           'phase': phase_calib,
           'frequency': freq_calib} 
-
-if __name__ == "__main__":
-  load_depth_images("/media/kristen/easystore2/processed_kyle_bags/kitti/irl/","/media/kristen/easystore2/processed_kyle_bags/kitti/irl/depth_imgs_01")
-

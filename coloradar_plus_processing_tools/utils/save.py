@@ -39,12 +39,13 @@ def save_cascade_heatmap_config(msg, file_path):
     #cascade_hm_file.write('num_doppler_bins ' + str(msg.num_doppler_bins) + '\n')
     cascade_heatmap_config_file.write('range_bin_width ' + str(msg.range_bin_width) + '\n')
     #cascade_hm_file.write('doppler_bin_width ' + str(msg.doppler_bin_width) + '\n')
+
     cascade_heatmap_config_file.write('azimuth_bins')
     for i in range(msg.width):
         cascade_heatmap_config_file.write(' ' + str(msg.azimuth_bins[i]))
-        cascade_heatmap_config_file.write('\n')
-        cascade_heatmap_config_file.write('elevation_bins')
+        
+    cascade_heatmap_config_file.write('\nelevation_bins')
     for i in range(msg.height):
         cascade_heatmap_config_file.write(' ' + str(msg.elevation_bins[i]))
-        cascade_heatmap_config_file.write('\n')
+
     cascade_heatmap_config_file.close()

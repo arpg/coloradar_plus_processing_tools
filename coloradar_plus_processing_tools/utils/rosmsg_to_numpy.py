@@ -43,7 +43,9 @@ def pointcloud_msg_to_numpy(msg, datatype=np.float32):
     # Decode the point cloud
     field_names = ['x', 'y', 'z', 'intensity', 'reflectivity']
     points = pc2.read_points(msg, field_names=field_names, skip_nans=True)
-    pointcloud_numpy = np.array(list(points), dtype=datatype)
+    pointcloud_numpy_all = np.array(list(points), dtype=datatype)
+    
+    pointcloud_numpy = pointcloud_numpy_all[:, :4]  # Only keep the x, y, z, intensity values
 
     return pointcloud_numpy
 
