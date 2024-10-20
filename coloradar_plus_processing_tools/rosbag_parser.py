@@ -27,7 +27,7 @@ class BagParser:
         self.cascade_datacube_topic = "/cascade/data_cube"
         self.cascade_heatmap_topic = "/cascade/heatmap"
         # self.transforms_topic = "/tf"
-        self.static_transforms_topic = "/tf_static"
+        # self.static_transforms_topic = "/tf_static"
 
         
         # Dictionary that maps topics to their respective handling functions. Keys can be used as wanted topics.
@@ -43,7 +43,7 @@ class BagParser:
             self.cascade_datacube_topic: self.handle_cascade_datacube,
             self.cascade_heatmap_topic: self.handle_cascade_heatmap,
             # self.transforms_topic: self.handle_transforms,
-            self.static_transforms_topic: self.handle_transforms,
+            # self.static_transforms_topic: self.handle_transforms,
         }
 
         # Initialize number of data to 1 so that it corresponds with line in timestamp text file
