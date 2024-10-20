@@ -1,13 +1,16 @@
 # ColoradarPlus Processing Configuration
 
-main_bag_directory_path: "/home/donceykong/Desktop/coloradarplus_data/bags"
-main_kitti_directory_path: "/home/donceykong/Desktop/coloradarplus_data/kitti"
+main_bag_directory_path: "/home/donceykong/Desktop/ARPG/projects/fall_2024/ColoradarPlus_FULL/coloradarplus_dataset/bags"
+main_kitti_directory_path: "/home/donceykong/Desktop/ARPG/projects/fall_2024/ColoradarPlus_FULL/coloradarplus_dataset/kitti"
 generate_sequence_run_stats: true
 display_rosbag_data: false
 
 sequences:
-  lobby: 
-    runs: [4]
+  c4c_garage: 
+    runs: [0]
+
+  # lobby: 
+  #   runs: [4]
 
   # c4c_garage: 
   #   runs: [4]
