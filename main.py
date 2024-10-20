@@ -33,7 +33,7 @@ def parse_config(config_path):
 
 def main():
     # Convert values from YAML config to dict for easier handling
-    crp_config_dict = parse_config("configs/processing_config.yaml")
+    crp_config_dict = parse_config("configs/processing_config_doncey.yaml")
 
     # Initialize bag_parser object
     dataset2kitti = DatasetToKitti(crp_config_dict)
