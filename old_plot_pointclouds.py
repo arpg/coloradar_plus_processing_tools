@@ -155,7 +155,7 @@ def animate_plot(i):
   R_wb = np.array(plot_data[i][1])
   t_wb = np.array(R_wb[:3,3])
   # R_wb[:3,3] = 0.0
-  
+
   # determine if the lidar or radar plot is replaced
   # and load new plot in base sensor rig frame
   if plot_data[i][3] == 'lidar':
@@ -171,18 +171,22 @@ def animate_plot(i):
     accum_pc = downsample_pointcloud(accum_pc, vox_size=0.5)
   else:
     if args.plot_heatmap:
+      # utils.read_heatmap_shape(plot_data[i][2], args.seq, radar_params)
       # load full radar heatmap from file
       radar_hm = utils.load_heatmap(plot_data[i][2], args.seq, radar_params)
       # assign intensity and doppler values to precalculated heatmap points
       # excluding points below the minimum range bin
       radar_pc_precalc[:,3:] = radar_hm[:,:,args.min_range:,:].reshape(-1,2)
       # downsample using voxel grid filter for faster plotting
-      radar_pc_local = downsample_pointcloud(radar_pc_precalc, 0.3)
+      radar_pc_local = downsample_pointcloud(radar_pc_precalc, 0.01)
+      
       # normalize intensity values 
       radar_pc_local[:,3] -= radar_pc_local[:,3].min()
       radar_pc_local[:,3] /= radar_pc_local[:,3].max()
+      
       # remove points with intensity below the threshold value
       radar_pc_local = radar_pc_local[radar_pc_local[:,3] > args.threshold]
+
       # re-normalize intensity values after removing below-threshold points
       radar_pc_local[:,3] -= radar_pc_local[:,3].min()
       radar_pc_local[:,3] /= radar_pc_local[:,3].max()
@@ -194,26 +198,30 @@ def animate_plot(i):
     T_ws = np.dot(R_wb, radar_params['T_bs'])
     radar_pc = transform_pcl(radar_pc_local, T_ws)
 
-  # translate pointcloud that wasn't updated
-  if i > 1:
-    if plot_data[i][3] == 'lidar':
-      radar_pc[:,:3] += (positions[-2] - positions[-1])
-    else:
-      lidar_pc[:,:3] = t_wb # was += positions[-2] #(positions[-2] - positions[-1])
+  # # translate pointcloud that wasn't updated
+  # if i > 1:
+  #   if plot_data[i][3] == 'lidar':
+  #     radar_pc[:,:3] += (positions[-2] - positions[-1])
+  #   else:
+  #     lidar_pc[:,:3] = t_wb # was += positions[-2] #(positions[-2] - positions[-1])
 
   # add current position to plotted path
   positions = np.concatenate((positions, t_wb.reshape(1,3)), axis=0)
   positions_ctr =  positions# - t_wb
 
   # update plot data
+  # Green position
   plots['positions'][0]._verts3d = (positions_ctr[:,0], positions_ctr[:,1], positions_ctr[:,2])
+
+  # Lidar
   plots['lidar']._offsets3d = (lidar_pc[:,0], lidar_pc[:,1], lidar_pc[:,2])
   plots['lidar'].set_array(lidar_pc[:, 3])  # Sets colormap to intensity channel
-  # plots['lidar'].set_cmap('plasma')
+  # plots['lidar'].set_cmap('viridis')
 
-  plots['accum_lidar']._offsets3d = (accum_pc[:,0], accum_pc[:,1], accum_pc[:,2])
-  plots['accum_lidar'].set_array(accum_pc[:, 3])  # Sets colormap to intensity channel
-  plots['accum_lidar'].set_cmap('viridis')        # Use a colormap like 'viridis'
+  # # Lidar Accum
+  # plots['accum_lidar']._offsets3d = (accum_pc[:,0], accum_pc[:,1], accum_pc[:,2])
+  # plots['accum_lidar'].set_array(accum_pc[:, 3])  # Sets colormap to intensity channel
+  # plots['accum_lidar'].set_cmap('viridis')        # Use a colormap like 'viridis'
 
   plots['radar']._offsets3d = (radar_pc[:,0], radar_pc[:,1], radar_pc[:,2])
   plots['radar'].set_array(radar_pc[:,3])
@@ -223,16 +231,13 @@ def animate_plot(i):
 if __name__ == '__main__':
 
   parser = argparse.ArgumentParser(description='get location for sequence and calibration')
-  parser.add_argument('-s', '--seq', type=str, default="/home/donceykong/Desktop/coloradarplus_data/kitti/lobby/lobby_04", help='directory of the sequence')
-  parser.add_argument('-c', '--calib', type=str, default="/home/donceykong/Desktop/coloradarplus_data/calib", help='directory of calib data')
-  parser.add_argument('-t', '--threshold', type=float, default=0.2, help='intensity threshold for plotting heatmap points')
-  parser.add_argument('-mr', '--min_range', type=int, default=10, help='if plotting heatmaps, minimum range bin to start plotting')
-  parser.add_argument('-hm', '--plot_heatmap', type=bool, default=False, help='true to plot radar heatmaps, false to plot pointclouds')
+  parser.add_argument('-s', '--seq', type=str, default="/home/donceykong/Desktop/ARPG/projects/fall_2024/ColoradarPlus_FULL/coloradarplus_dataset/kitti/c4c_garage/c4c_garage_run0", help='directory of the sequence')
+  parser.add_argument('-c', '--calib', type=str, default="/home/donceykong/Desktop/ARPG/projects/fall_2024/ColoradarPlus_FULL/coloradarplus_dataset/calib", help='directory of calib data')
+  parser.add_argument('-t', '--threshold', type=float, default=0.1, help='intensity threshold for plotting heatmap points')
+  parser.add_argument('-mr', '--min_range', type=int, default=1, help='if plotting heatmaps, minimum range bin to start plotting')
+  parser.add_argument('-hm', '--plot_heatmap', type=bool, default=True, help='true to plot radar heatmaps, false to plot pointclouds')
   parser.add_argument('-sc', '--single_chip', type=bool, default=False, help='true to plot single chip data, false to plot cascade data')
   args = parser.parse_args()
-
-  # args.single_chip = args.single_chip.lower() == False
-  # args.plot_heatmap = args.plot_heatmap.lower() == True #'false'
 
   if not args.single_chip and not args.plot_heatmap:
     print('warn: pointclouds not available for cascade sensor, setting --plot_heatmap to True')
@@ -251,11 +256,11 @@ if __name__ == '__main__':
   # make extrinsic transforms as 4x4 transformation matrix
   radar_params['T_bs'] = np.eye(4)
   radar_params['T_bs'][:3,3] = radar_params['translation']
-  radar_params['T_bs'][:3,:3] = Rotation.from_quat(radar_params['rotation']).as_matrix() #.as_dcm()
+  radar_params['T_bs'][:3,:3] = Rotation.from_quat(radar_params['rotation']).as_matrix()
 
   lidar_params['T_bs'] = np.eye(4)
   lidar_params['T_bs'][:3,3] = lidar_params['translation']
-  lidar_params['T_bs'][:3,:3] = Rotation.from_quat(lidar_params['rotation']).as_matrix() #.as_dcm()
+  lidar_params['T_bs'][:3,:3] = Rotation.from_quat(lidar_params['rotation']).as_matrix()
 
   # get plot legend labels
   radar_label = radar_params['sensor_type'] + ' ' + radar_params['data_type']
@@ -269,6 +274,7 @@ if __name__ == '__main__':
 
   # get groundtruth poses
   gt_poses = utils.load_groundtruth(args.seq)
+  # radar_poses = utils.get_sensor_poses_from_gt(gt_poses, radar_params)
 
   # interpolate groundtruth poses for each sensor measurement
   #src_poses, src_stamps, tgt_stamps
@@ -296,10 +302,10 @@ if __name__ == '__main__':
     radar_pc_precalc = np.random.rand(10,4)
 
   #radar_pc_precalc = np.random.rand(10,4)
-  radar_pc = np.random.rand(10,4)
-  lidar_pc = np.random.rand(10,5)
-  accum_pc = np.empty((0, 5))
-  positions = np.zeros((1,3))
+  radar_pc = np.random.rand(10, 4)
+  lidar_pc = np.random.rand(10, 4)
+  accum_pc = np.empty((0, 4))
+  positions = np.zeros((1, 3))
 
   # initialize plot
   fig = plt.figure()
@@ -338,6 +344,9 @@ if __name__ == '__main__':
                                positions[:,1],
                                positions[:,2],
                                c='g')
+
+  # Set the view to top-down
+  ax.view_init(elev=90, azim=0)  # 90 degrees elevation for top-down view
 
   # start animation
   lidar_FPS = 60            # [hz]  
