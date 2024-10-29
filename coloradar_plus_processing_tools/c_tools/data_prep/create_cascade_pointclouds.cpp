@@ -20,9 +20,9 @@ int main(int argc, char** argv) {
     float intensityThresholdPercent = (argc == 4) ? std::stof(argv[3]) : 0;
 
     fs::path coloradarDirPath(coloradarDir);
-    coloradar::ColoradarDataset dataset(coloradarDirPath);
-    coloradar::ColoradarRun run = dataset.getRun(runName);
-    run.createRadarPointclouds(&dataset.cascadeConfig, intensityThresholdPercent);
+    coloradar::ColoradarPlusDataset dataset(coloradarDirPath);
+    auto run = dataset.getRun(runName);
+    run->createCascadePointclouds(intensityThresholdPercent);
 
     return 0;
 }

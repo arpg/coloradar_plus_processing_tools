@@ -1,4 +1,4 @@
-#include "coloradar_tools.h"
+#include "configs.h"
 
 #include <json/json.h>
 #include <map>
@@ -136,7 +136,6 @@ void coloradar::RadarConfig::initHeatmapParams(const std::filesystem::path& heat
 
     auto it = configMap.find("num_range_bins");
     if (it != configMap.end()) {
-        // WARNING
         numPosRangeBins = std::stoi(it->second[0]);
         numRangeBins = numPosRangeBins * 2;
     } else {
@@ -318,35 +317,20 @@ void coloradar::RadarConfig::initPhaseFrequencyParams(const std::filesystem::pat
             phaseCalibMatrix[idx] = phase_ref / phaseData[idx];
         }
     }
-//    for (int i = 0; i < freqData.size(); i += 2) {
-//        double real = freqData[i];
-//        double imag = freqData[i + 1];
-//        frequencyCalibMatrix[i / 2] = std::complex<double>(real, imag);
-//    }
-//    phaseCalibMatrix = phaseData;
-//    if (frequencyCalibMatrix.size() != numTxAntennas * numRxAntennas * numRangeBins) {
-//        throw std::runtime_error("Invalid freq calibration matrix: expected " + std::to_string(numRxAntennas * numTxAntennas * numRangeBins) + " elements, got " + std::to_string(frequencyCalibMatrix.size()));
-//    }
 }
 
 
 void coloradar::RadarConfig::initInternalParams() {
     azimuthApertureLen = 0;
     elevationApertureLen = 0;
+    numVirtualElements = 0;
     virtualArrayMap.clear();
     azimuthAngles.clear();
     elevationAngles.clear();
     azimuthAngles.resize(numAzimuthBeams);
     elevationAngles.resize(numElevationBeams);
-
     numAngles = numAzimuthBeams * numElevationBeams;
 
-// WARNING
-//    std::vector<pcl::PointXY> tx_centers_reordered(config->numTxAntennas);
-//    for (int tx_idx = 0; tx_idx < config->numTxAntennas; tx_idx++)
-//      tx_centers_reordered[tx_idx] = tx_centers[radar_msg->tx_order[tx_idx]];
-//    tx_centers = tx_centers_reordered;
-    numVirtualElements = 0;
     for (int tx_idx = 0; tx_idx < numTxAntennas; tx_idx++)
     {
       for (int rx_idx = 0; rx_idx < numRxAntennas; rx_idx++)
@@ -403,20 +387,15 @@ void coloradar::RadarConfig::initInternalParams() {
 }
 
 
-bool compareVectors(const std::vector<std::complex<double>>& vec1, const std::vector<std::complex<double>>& vec2) {
-    return vec1.size() == vec2.size() && std::equal(vec1.begin(), vec1.end(), vec2.begin());
-}
+coloradar::RadarConfig::RadarConfig(const int& nAzimuthBeams, const int& nElevationBeams): numAzimuthBeams(nAzimuthBeams), numElevationBeams(nElevationBeams) {}
 
-coloradar::SingleChipConfig::SingleChipConfig(const std::filesystem::path& calibDir) {
+
+coloradar::SingleChipConfig::SingleChipConfig(const std::filesystem::path& calibDir, const int& nAzimuthBeams, const int& nElevationBeams) : coloradar::RadarConfig(nAzimuthBeams, nElevationBeams) {
     coloradar::internal::checkPathExists(calibDir);
     init(calibDir);
 }
 
 void coloradar::SingleChipConfig::init(const std::filesystem::path& calibDir) {
-      // WARNING: default 64 8
-    numAzimuthBeams = 64;
-    numElevationBeams = 8;
-
     std::filesystem::path configDir = calibDir / "single_chip";
     coloradar::internal::checkPathExists(configDir);
     std::filesystem::path antennaConfigFilePath = configDir / "antenna_cfg.txt";
@@ -430,16 +409,12 @@ void coloradar::SingleChipConfig::init(const std::filesystem::path& calibDir) {
     initInternalParams();
 }
 
-coloradar::CascadeConfig::CascadeConfig(const std::filesystem::path& calibDir) {
+coloradar::CascadeConfig::CascadeConfig(const std::filesystem::path& calibDir, const int& nAzimuthBeams, const int& nElevationBeams) : coloradar::RadarConfig(nAzimuthBeams, nElevationBeams) {
     coloradar::internal::checkPathExists(calibDir);
     init(calibDir);
 }
 
 void coloradar::CascadeConfig::init(const std::filesystem::path& calibDir) {
-      // WARNING: default 64 8
-    numAzimuthBeams = 128;
-    numElevationBeams = 32;
-
     std::filesystem::path configDir = calibDir / "cascade";
     coloradar::internal::checkPathExists(configDir);
     std::filesystem::path antennaConfigFilePath = configDir / "antenna_cfg.txt";

@@ -1,5 +1,5 @@
-#ifndef UTILS_HPP
-#define UTILS_HPP
+#ifndef INTERNAL_HPP
+#define INTERNAL_HPP
 
 #include <stdexcept>
 #include <functional>

@@ -1,47 +1,48 @@
 #ifndef UTILS_H
 #define UTILS_H
 
-#include "types.h"
+#include "configs.h"
 
 #include <filesystem>
+#include <string>
+#include <vector>
+#include <Eigen/Dense>
 
 
-namespace coloradar::internal {
+namespace coloradar {
 
-    void checkPathExists(const std::filesystem::path& path);
-    void createDirectoryIfNotExists(const std::filesystem::path& dirPath);
-    std::filesystem::path replaceInFilename(const std::filesystem::path& originalPath, const std::string& toReplace, const std::string& replacement);
+struct RadarPoint
+{
+  PCL_ADD_POINT4D;
+  float intensity;
+  float doppler;
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+} EIGEN_ALIGN16;
 
-    template<coloradar::Pcl4dPointType PointT> PointT makePoint(const float& x, const float& y, const float& z, const float& i);
-    template<coloradar::PointType PointT> PointT makePoint(const float& x, const float& y, const float& z, const float& i);
 
-    template<coloradar::PclPoseType PoseT>
-    PoseT makePose(const typename coloradar::PoseTraits<PoseT>::TranslationType& translation, const typename coloradar::PoseTraits<PoseT>::RotationType& rotation);
-    template<coloradar::OctoPoseType PoseT>
-    PoseT makePose(const typename coloradar::PoseTraits<PoseT>::TranslationType& translation, const typename coloradar::PoseTraits<PoseT>::RotationType& rotation);
+template <Pcl4dPointType PointT, template <PclCloudType> class CloudT> void octreeToPcl(const octomap::OcTree& tree, CloudT<PointT>& cloud);
+template <PclPointType PointT, template <PclCloudType> class CloudT> void filterFov(CloudT<PointT>& cloud, const float& horizontalFov, const float& verticalFov, const float& range);
+pcl::PointCloud<RadarPoint> heatmapToPointcloud(const std::vector<float>& heatmap, coloradar::RadarConfig* config, const float& intensityThresholdPercent = 0.0);
+std::vector<float> clipHeatmapImage(const std::vector<float>& image, const float& horizontalFov, const float& verticalFov, const float& range, coloradar::RadarConfig* config);
+std::vector<float> clipHeatmapImage(const std::vector<float>& image, const int& azimuthMaxBin, const int& elevationMaxBin, const int& rangeMaxBin, coloradar::RadarConfig* config);
 
-    template<coloradar::PclPoseType PoseT> Eigen::Vector3f toEigenTrans(const PoseT& pose);
-    template<coloradar::PclPoseType PoseT> Eigen::Quaternionf toEigenQuat(const PoseT& pose);
-    template<coloradar::OctoPoseType PoseT> Eigen::Vector3f toEigenTrans(const PoseT& pose);
-    template<coloradar::OctoPoseType PoseT> Eigen::Quaternionf toEigenQuat(const PoseT& pose);
-;
-    template<typename TransT> TransT fromEigenTrans(const Eigen::Vector3f& r);
-    template<typename RotationT> RotationT fromEigenQuat(const Eigen::Quaternionf& r);
-    template<> octomath::Vector3 fromEigenTrans(const Eigen::Vector3f& r);
-    template<> octomath::Quaternion fromEigenQuat(const Eigen::Quaternionf& r);
 
-    template<coloradar::PclPoseType PoseT> Eigen::Affine3f toEigenPose(const PoseT& pose);
-    template<coloradar::PclPoseType PoseT> PoseT fromEigenPose(const Eigen::Affine3f& pose);
-    template<coloradar::OctoPoseType PoseT> Eigen::Affine3f toEigenPose(const PoseT& pose);
-    template<coloradar::OctoPoseType PoseT> PoseT fromEigenPose(const Eigen::Affine3f& pose);
+class OctoPointcloud : public octomap::Pointcloud {
+public:
+    OctoPointcloud() = default;
+    OctoPointcloud(const OctoPointcloud& other) : octomap::Pointcloud(other) {}
+    template <PclPointType PointT, template <PclCloudType> class CloudT> OctoPointcloud(const CloudT<PointT>& cloud);
 
-    template<coloradar::PointType PointT, coloradar::CloudType CloudT> CloudT readLidarPointCloud(const std::filesystem::path& binPath);
+    template <PclCloudType CloudT> CloudT toPcl();
 
-    template<typename PointT, typename CloudT> void filterFov(CloudT& cloud, const float& horizontalFov, const float& verticalFov, const float& range);
+    void filterFov(const float& horizontalFovTan, const float& verticalFovTan, const float& range);
+    void transform(const Eigen::Affine3f& transformMatrix);
+    using octomap::Pointcloud::transform;
+};
 
-    Eigen::Vector3f sphericalToCartesian(const double& az, const double& el, const double& range);
 }
 
-#include "utils.hpp"
+#include "pcl_functions.hpp"
+#include "octo_pointcloud.hpp"
 
 #endif

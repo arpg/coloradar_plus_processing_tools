@@ -40,7 +40,7 @@ namespace coloradar {
         const RadarConfig* config;
 
         RadarProcessor(
-            RadarConfig* config,
+            const RadarConfig* config,
             const double& blackmanParamA0 = 0.42,
             const double& blackmanParamA1 = 0.5,
             const double& blackmanParamA2 = 0.08

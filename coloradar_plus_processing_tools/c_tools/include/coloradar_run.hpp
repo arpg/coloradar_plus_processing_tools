@@ -8,8 +8,8 @@
 
 
 template<coloradar::PoseType PoseT>
-std::vector<PoseT> coloradar::ColoradarRun::getPoses() {
-    std::filesystem::path posesFilePath = posesDirPath / "groundtruth_poses.txt";
+std::vector<PoseT> coloradar::ColoradarPlusRun::getPoses() {
+    std::filesystem::path posesFilePath = posesDirPath_ / "groundtruth_poses.txt";
     coloradar::internal::checkPathExists(posesFilePath);
 
     std::vector<PoseT> poses;
@@ -30,7 +30,7 @@ std::vector<PoseT> coloradar::ColoradarRun::getPoses() {
 
 
 template<coloradar::PoseType PoseT>
-std::vector<PoseT> coloradar::ColoradarRun::interpolatePoses(const std::vector<PoseT>& poses, const std::vector<double>& poseTimestamps, const std::vector<double>& targetTimestamps) {
+std::vector<PoseT> coloradar::ColoradarPlusRun::interpolatePoses(const std::vector<PoseT>& poses, const std::vector<double>& poseTimestamps, const std::vector<double>& targetTimestamps) {
     std::vector<PoseT> interpolatedPoses;
     size_t tsStartIdx = 0, tsEndIdx = poseTimestamps.size() - 1;
     size_t tsIdx = tsStartIdx;
@@ -67,18 +67,18 @@ std::vector<PoseT> coloradar::ColoradarRun::interpolatePoses(const std::vector<P
 
 
 template<coloradar::PclCloudType CloudT>
-CloudT coloradar::ColoradarRun::getLidarPointCloud(const std::filesystem::path& binPath) {
+CloudT coloradar::ColoradarPlusRun::getLidarPointCloud(const std::filesystem::path& binPath) {
     return coloradar::internal::readLidarPointCloud<typename CloudT::PointType, CloudT>(binPath);
 }
 
 template<coloradar::OctomapCloudType CloudT>
-CloudT coloradar::ColoradarRun::getLidarPointCloud(const std::filesystem::path& binPath) {
+CloudT coloradar::ColoradarPlusRun::getLidarPointCloud(const std::filesystem::path& binPath) {
     return coloradar::internal::readLidarPointCloud<octomap::point3d, CloudT>(binPath);
 }
 
 template<coloradar::CloudType CloudT>
-CloudT coloradar::ColoradarRun::getLidarPointCloud(const int& cloudIdx) {
-    std::filesystem::path pclBinFilePath = lidarCloudsDirPath / ("lidar_pointcloud_" + std::to_string(cloudIdx) + ".bin");
+CloudT coloradar::ColoradarPlusRun::getLidarPointCloud(const int& cloudIdx) {
+    std::filesystem::path pclBinFilePath = lidarCloudsDirPath_ / ("lidar_pointcloud_" + std::to_string(cloudIdx) + ".bin");
     return getLidarPointCloud<CloudT>(pclBinFilePath);
 }
 

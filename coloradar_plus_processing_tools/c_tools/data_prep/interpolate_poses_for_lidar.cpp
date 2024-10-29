@@ -45,11 +45,9 @@ int main(int argc, char** argv) {
     fs::path outputFilePath(outputFile.empty() ? "lidar_poses_interpolated.txt" : outputFile);
 
     coloradar::ColoradarDataset dataset(coloradarDir);
-    coloradar::ColoradarRun run = dataset.getRun(runName);
-    std::vector<double> lidarTimestamps = run.getLidarTimestamps();
-    std::vector<double> poseTimestamps = run.getPoseTimestamps();
-    auto poses = run.getPoses<octomath::Pose6D>();
-    auto posesInterpolated = run.interpolatePoses(poses, poseTimestamps, lidarTimestamps);
+    auto run = dataset.getRun(runName);
+    auto poses = run->getPoses<octomath::Pose6D>();
+    auto posesInterpolated = run->interpolatePoses(poses, run->poseTimestamps(), run->lidarTimestamps());
 
     savePoses(posesInterpolated, outputFilePath);
 }

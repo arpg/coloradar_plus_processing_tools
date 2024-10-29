@@ -30,12 +30,12 @@ include_directories(${PROJECT_SOURCE_DIR}/include ${PCL_INCLUDE_DIRS} ${OCTOMAP_
 ### LIBS
 
 add_library(coloradar_tools SHARED
-    libs/utils.cpp
+    libs/internal.cpp
     libs/configs.cpp
     libs/pcl_functions.cpp
     libs/octo_pointcloud.cpp
     libs/coloradar_run.cpp
-    libs/coloradar_dataset.cpp
+    libs/dataset.cpp
 )
 target_link_libraries(coloradar_tools ${PCL_LIBRARIES} ${OCTOMAP_LIBRARIES})
 
@@ -80,3 +80,6 @@ target_link_libraries(sample_map_frames coloradar_tools)
 
 add_executable(create_cascade_pointclouds data_prep/create_cascade_pointclouds.cpp)
 target_link_libraries(create_cascade_pointclouds coloradar_tools)
+
+add_executable(make_dataset data_prep/make_dataset.cpp)
+target_link_libraries(make_dataset coloradar_tools)

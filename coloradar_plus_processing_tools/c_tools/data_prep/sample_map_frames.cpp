@@ -45,23 +45,21 @@ int main(int argc, char** argv) {
 
     Eigen::Affine3f transform = Eigen::Affine3f::Identity();
     if (applyTransform == "cascade") {
-        transform = dataset.getBaseToCascadeRadarTransform().inverse();
+        transform = dataset.cascadeTransform().inverse();
     } else if (applyTransform == "single_chip") {
-        transform = dataset.getBaseToRadarTransform().inverse();
+        transform = dataset.singleChipTransform().inverse();
     }
 
     for (size_t i = 0; i < targetRuns.size(); ++i) {
-        coloradar::ColoradarRun run = dataset.getRun(targetRuns[i]);
-        auto poses = run.getPoses<octomath::Pose6D>();
-        std::vector<double> gtTimestamps = run.getPoseTimestamps();
+        auto run = dataset.getRun(targetRuns[i]);
+        auto poses = run->getPoses<octomath::Pose6D>();
         if (applyTransform == "cascade") {
-            std::vector<double> cascadeTimestamps = run.getCascadeTimestamps();
-            poses = run.interpolatePoses(poses, gtTimestamps, cascadeTimestamps);
+            poses = run->interpolatePoses(poses, run->poseTimestamps(), run->cascadeTimestamps());
         } else if (applyTransform == "single_chip") {
-            std::vector<double> radarTimestamps = run.getRadarTimestamps();
-            poses = run.interpolatePoses(poses, gtTimestamps, radarTimestamps);
+            auto runOld = dynamic_cast<coloradar::ColoradarRun*>(run);
+            poses = run->interpolatePoses(poses, runOld->poseTimestamps(), runOld->singleChipTimestamps());
         }
-        run.sampleMapFrames(horizontalFov, verticalFov, range, transform, poses);
+        run->sampleMapFrames(horizontalFov, verticalFov, range, transform, poses);
     }
 
 //

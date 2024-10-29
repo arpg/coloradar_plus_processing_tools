@@ -46,7 +46,7 @@ void coloradar::RadarProcessor::initFftPlans() {
     cudaDeviceSynchronize();
 }
 
-coloradar::RadarProcessor::RadarProcessor(RadarConfig* radarConfig, const double& blackmanParamA0, const double& blackmanParamA1, const double& blackmanParamA2)
+coloradar::RadarProcessor::RadarProcessor(const RadarConfig* radarConfig, const double& blackmanParamA0, const double& blackmanParamA1, const double& blackmanParamA2)
         : config(radarConfig), blackmanA0(blackmanParamA0), blackmanA1(blackmanParamA1), blackmanA2(blackmanParamA2) {
 
     cudaMalloc(&virtualArrayMap, sizeof(int) * 4 * config->numVirtualElements);

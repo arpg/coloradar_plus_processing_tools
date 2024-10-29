@@ -143,15 +143,15 @@ std::vector<float> cubeToHeatmap(std::vector<int16_t> cube) {
     return hm;
 }
 
-std::vector<std::vector<float>> collectHeatmaps(fs::path folder, std::vector<std::string> filenames, coloradar::ColoradarDataset dataset, coloradar::ColoradarRun run, bool fromCubes = false) {
+std::vector<std::vector<float>> collectHeatmaps(fs::path folder, std::vector<std::string> filenames, coloradar::ColoradarDataset dataset, coloradar::ColoradarPlusRun* run, bool fromCubes = false) {
     std::vector<std::vector<float>> heatmaps;
     std::vector<float> hm;
     for (auto const& name : filenames) {
         if (fromCubes){
-            auto cube = run.getDatacube(folder / name, &dataset.cascadeConfig);
+            auto cube = run->getCascadeDatacube(folder / name);
             hm = cubeToHeatmap(cube);
         } else {
-            hm = run.getHeatmap(folder / name, &dataset.cascadeConfig);
+            hm = run->getCascadeHeatmap(folder / name);
         }
         heatmaps.push_back(hm);
     }
@@ -161,7 +161,7 @@ std::vector<std::vector<float>> collectHeatmaps(fs::path folder, std::vector<std
 std::vector<std::vector<float>> collectHeatmaps(
     std::vector<int> idx,
     coloradar::ColoradarDataset dataset,
-    coloradar::ColoradarRun run,
+    coloradar::ColoradarPlusRun* run,
     coloradar::RadarProcessor* radarProcessor,
     bool fromCubes = false,
     bool collapseDoppler = false,
@@ -172,14 +172,14 @@ std::vector<std::vector<float>> collectHeatmaps(
     std::vector<float> hm;
     for (auto const& i : idx) {
         if (fromCubes){
-            auto cube = run.getDatacube(i, &dataset.cascadeConfig);
+            auto cube = run->getCascadeDatacube(i);
             hm = radarProcessor->cubeToHeatmap(cube, collapseDoppler, removeAntennaCoupling, applyPhaseFrequencyCalib);
 //             std::cout << "Cube " << i << std::endl;
 //             for (size_t j = 0; j < 20; ++j) {
 //                 std::cout << hm[j] << std::endl;
 //             }
         } else {
-            hm = run.getHeatmap(i, &dataset.cascadeConfig);
+            hm = run->getCascadeHeatmap(i);
         }
         heatmaps.push_back(hm);
     }
@@ -202,8 +202,9 @@ int main(int argc, char** argv) {
 
     fs::path coloradarDirPath(coloradarDir);
     coloradar::ColoradarDataset dataset(coloradarDirPath);
-    coloradar::ColoradarRun run = dataset.getRun(runName);
-    coloradar::RadarProcessor radarProcessor(&dataset.cascadeConfig);
+    auto run = dataset.getRun(runName);
+    auto config = dataset.cascadeConfig();
+    coloradar::RadarProcessor radarProcessor(config);
 
     fs::path dHmFolder = coloradarDirPath / "heatmaps2";
     fs::path containerHmFolder = coloradarDirPath / "ros_output" / "heatmaps521_bins";

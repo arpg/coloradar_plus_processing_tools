@@ -50,6 +50,30 @@ void savePointCloudToHDF5(const std::string& datasetName, const pcl::PointCloud<
     dataset.write(cloudData.data(), H5::PredType::NATIVE_FLOAT);
 }
 
+void saveRadarPointCloudToHDF5(const std::string& datasetName, const pcl::PointCloud<coloradar::RadarPoint>& cloud, H5::H5File& file) {
+    hsize_t dims[2] = { cloud.size(), 5 };  // XYZ + intensity + doppler
+    H5::DataSpace dataspace(2, dims);
+
+    // Create the dataset in the HDF5 file
+    H5::DataSet dataset = file.createDataSet(datasetName, H5::PredType::NATIVE_FLOAT, dataspace);
+
+    // Reserve space for the data to write to HDF5
+    std::vector<float> cloudData;
+    cloudData.reserve(cloud.size() * 5);  // 5 fields: x, y, z, intensity, doppler
+
+    // Populate the data vector
+    for (const auto& point : cloud) {
+        cloudData.push_back(point.x);
+        cloudData.push_back(point.y);
+        cloudData.push_back(point.z);
+        cloudData.push_back(point.intensity);
+        cloudData.push_back(point.doppler);
+    }
+
+    // Write the data to the HDF5 dataset
+    dataset.write(cloudData.data(), H5::PredType::NATIVE_FLOAT);
+}
+
 
 int main(int argc, char** argv) {
     auto args = parseArguments(argc, argv);
@@ -63,32 +87,34 @@ int main(int argc, char** argv) {
     int elevationMaxBin = args.find("elevationMaxBin") != args.end() ? std::stoi(args["elevationMaxBin"]) : 0;
     int rangeMaxBin = args.find("rangeMaxBin") != args.end() ? std::stoi(args["rangeMaxBin"]) : 0;
 
-    coloradar::ColoradarDataset dataset(coloradarDir);
+    fs::path coloradarDirPath(coloradarDir);
+    coloradar::ColoradarPlusDataset dataset(coloradarDirPath);
     std::vector<std::string> targetRuns;
     if (!runName.empty()) {
         targetRuns.push_back(runName);
+    } else {
+        targetRuns = {"ec_hallways_run0", "ec_hallways_run2"};
     }
 
-    H5::H5File file("output_data.h5", H5F_ACC_TRUNC);
+    H5::H5File file(coloradarDirPath / "dataset.h5", H5F_ACC_TRUNC);
     for (const auto& runName : targetRuns) {
-        coloradar::ColoradarRun run = dataset.getRun(runName);
-        auto poses = run.getPoses<octomath::Pose6D>();
-        std::vector<double> poseTimestamps = run.getPoseTimestamps();
-        std::vector<double> radarTimestamps = run.getCascadeTimestamps();
-        auto radarPoses = run.interpolatePoses(poses, poseTimestamps, radarTimestamps);
+        auto run = dataset.getRun(runName);
+        auto poses = run->getPoses<octomath::Pose6D>();
+        auto radarPoses = run.interpolatePoses(poses, run->poseTimestamps(), run->cascadeTimestamps());
 
-        saveVectorToHDF5("true_poses", poseTimestamps, file);
-        saveVectorToHDF5("radar_timestamps", radarTimestamps, file);
-        saveVectorToHDF5("radar_poses", radarPoses, file);
+        saveVectorToHDF5("timestamps", run->radarTimestamps(), file);
+        saveVectorToHDF5("poses", radarPoses, file);
 
-        for (size_t j = 0; j < radarTimestamps.size(); ++j) {
-            std::vector<float> rawHeatmap = run.getHeatmap(j, &dataset.cascadeConfig);
-            std::vector<float> heatmap = run.clipHeatmapImage(rawHeatmap, azimuthMaxBin, elevationMaxBin, rangeMaxBin, &dataset.cascadeConfig);
-            saveHeatmapToHDF5("heatmap_" + std::to_string(j), heatmap, file);
-        }
-        for (size_t j = 0; j < poseTimestamps.size(); ++j) {
-            pcl::PointCloud<pcl::PointXYZI> mapFrame = run.readMapFrame(j);
-            savePointCloudToHDF5("map_frame_" + std::to_string(j), mapFrame, file);
+        for (size_t j = 0; j < run->cascadeTimestamps().size(); ++j) {
+            std::vector<float> rawHeatmap = run->getCascadeHeatmap(j);
+            std::vector<float> heatmap = coloradar::clipHeatmapImage(rawHeatmap, azimuthMaxBin, elevationMaxBin, rangeMaxBin, &dataset.cascadeConfig());
+            saveHeatmapToHDF5("radar_heatmap_" + std::to_string(j), heatmap, file);
+
+            auto cloud = run->getCascadePointcloud(j, 0);
+            saveRadarPointCloudToHDF5("radar_cloud_" + std::to_string(j), cloud, file);
+
+            pcl::PointCloud<pcl::PointXYZI> mapFrame = run->readMapFrame(j);
+            savePointCloudToHDF5("lidar_map_frame_" + std::to_string(j), mapFrame, file);
         }
     }
     file.close();

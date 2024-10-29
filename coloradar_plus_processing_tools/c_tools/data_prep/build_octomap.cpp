@@ -38,11 +38,9 @@ int main(int argc, char** argv) {
     double range = args.find("range") != args.end() ? std::stod(args["range"]) : 0.0;
 
     coloradar::ColoradarDataset dataset(coloradarDir);
-    std::vector<std::string> targetRuns;
-    if (!runName.empty()) {
-        targetRuns.push_back(runName);
+    for (auto run : dataset.getRuns()) {
+        run->buildLidarOctomap(mapResolution, horizontalFov, verticalFov, range, dataset.lidarTransform());
     }
-    dataset.createMaps(mapResolution, horizontalFov, verticalFov, range, targetRuns);
 
     return 0;
 }
