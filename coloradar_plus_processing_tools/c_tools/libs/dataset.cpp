@@ -4,7 +4,13 @@
 #include <sstream>
 
 
-coloradar::ColoradarPlusDataset::ColoradarPlusDataset(const std::filesystem::path& pathToDataset) : datasetDirPath_(pathToDataset) {
+coloradar::ColoradarPlusDataset::ColoradarPlusDataset(const std::filesystem::path& pathToDataset) {
+    init(pathToDataset);
+    cascadeTransform_ = loadTransform(transformsDirPath_ / "base_to_radar.txt");
+}
+
+void coloradar::ColoradarPlusDataset::init(const std::filesystem::path& pathToDataset) {
+    datasetDirPath_ = pathToDataset;
     coloradar::internal::checkPathExists(datasetDirPath_);
     calibDirPath_ = datasetDirPath_ / "calib";
     coloradar::internal::checkPathExists(calibDirPath_);
@@ -15,7 +21,6 @@ coloradar::ColoradarPlusDataset::ColoradarPlusDataset(const std::filesystem::pat
 
     imuTransform_ = loadTransform(transformsDirPath_ / "base_to_imu.txt");
     lidarTransform_ = loadTransform(transformsDirPath_ / "base_to_lidar.txt");
-    initCascadeTransform();
 
     cascadeConfig_ = new coloradar::CascadeConfig(calibDirPath_);
 }
@@ -40,10 +45,6 @@ Eigen::Affine3f coloradar::ColoradarPlusDataset::loadTransform(const std::filesy
     transform.translate(translation);
     transform.rotate(rotation);
     return transform;
-}
-
-void coloradar::ColoradarPlusDataset::initCascadeTransform() {
-    cascadeTransform_ = loadTransform(transformsDirPath_ / "base_to_radar.txt");
 }
 
 std::vector<std::string> coloradar::ColoradarPlusDataset::listRuns() {
@@ -74,13 +75,11 @@ const Eigen::Affine3f& coloradar::ColoradarPlusDataset::cascadeTransform() const
 const coloradar::RadarConfig* coloradar::ColoradarPlusDataset::cascadeConfig() const { return cascadeConfig_; }
 
 
-coloradar::ColoradarDataset::ColoradarDataset(const std::filesystem::path& pathToDataset) : coloradar::ColoradarPlusDataset(pathToDataset) {
+coloradar::ColoradarDataset::ColoradarDataset(const std::filesystem::path& pathToDataset) {
+    init(pathToDataset);
+    cascadeTransform_ = loadTransform(transformsDirPath_ / "base_to_cascade.txt");
     singleChipTransform_ = loadTransform(transformsDirPath_ / "base_to_single_chip.txt");
     singleChipConfig_ = new coloradar::SingleChipConfig(calibDirPath_);
-}
-
-void coloradar::ColoradarDataset::initCascadeTransform() {
-    cascadeTransform_ = loadTransform(transformsDirPath_ / "base_to_cascade.txt");
 }
 
 coloradar::ColoradarPlusRun* coloradar::ColoradarDataset::getRun(const std::string& runName) {

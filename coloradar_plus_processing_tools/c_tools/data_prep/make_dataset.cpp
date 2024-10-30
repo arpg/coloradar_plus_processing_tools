@@ -5,6 +5,11 @@
 namespace fs = std::filesystem;
 
 
+#include <sstream>
+#include <iomanip>
+#include <json/json.h>  // Assuming you have a JSON library, like nlohmann/json or similar
+
+
 std::unordered_map<std::string, std::string> parseArguments(int argc, char** argv) {
     std::unordered_map<std::string, std::string> arguments;
     for (int i = 1; i < argc; ++i) {
@@ -53,15 +58,10 @@ void savePointCloudToHDF5(const std::string& datasetName, const pcl::PointCloud<
 void saveRadarPointCloudToHDF5(const std::string& datasetName, const pcl::PointCloud<coloradar::RadarPoint>& cloud, H5::H5File& file) {
     hsize_t dims[2] = { cloud.size(), 5 };  // XYZ + intensity + doppler
     H5::DataSpace dataspace(2, dims);
-
-    // Create the dataset in the HDF5 file
     H5::DataSet dataset = file.createDataSet(datasetName, H5::PredType::NATIVE_FLOAT, dataspace);
-
-    // Reserve space for the data to write to HDF5
     std::vector<float> cloudData;
-    cloudData.reserve(cloud.size() * 5);  // 5 fields: x, y, z, intensity, doppler
+    cloudData.reserve(cloud.size() * 5);
 
-    // Populate the data vector
     for (const auto& point : cloud) {
         cloudData.push_back(point.x);
         cloudData.push_back(point.y);
@@ -69,9 +69,34 @@ void saveRadarPointCloudToHDF5(const std::string& datasetName, const pcl::PointC
         cloudData.push_back(point.intensity);
         cloudData.push_back(point.doppler);
     }
-
-    // Write the data to the HDF5 dataset
     dataset.write(cloudData.data(), H5::PredType::NATIVE_FLOAT);
+}
+
+void saveRadarPosesToHDF5(const std::string& datasetName, const std::vector<octomath::Pose6D>& poses, H5::H5File& file) {
+    hsize_t dims[2] = { poses.size(), 7 };  // Each pose has 7 values: x, y, z, qx, qy, qz, qw
+    H5::DataSpace dataspace(2, dims);
+    H5::DataSet dataset = file.createDataSet(datasetName, H5::PredType::NATIVE_DOUBLE, dataspace);
+    std::vector<double> poseData;
+    poseData.reserve(poses.size() * 7);
+
+    for (const auto& pose : poses) {
+        poseData.push_back(pose.x());
+        poseData.push_back(pose.y());
+        poseData.push_back(pose.z());
+        const auto& quat = pose.rot();
+        poseData.push_back(quat.x());
+        poseData.push_back(quat.y());
+        poseData.push_back(quat.z());
+        poseData.push_back(quat.u());
+    }
+    dataset.write(poseData.data(), H5::PredType::NATIVE_DOUBLE);
+}
+
+void saveJsonToHDF5(const std::string& datasetName, const std::string& jsonStr, H5::H5File& file) {
+    hsize_t dims[1] = { jsonStr.size() };
+    H5::DataSpace dataspace(1, dims);
+    H5::DataSet dataset = file.createDataSet(datasetName, H5::PredType::NATIVE_CHAR, dataspace);
+    dataset.write(jsonStr.c_str(), H5::PredType::NATIVE_CHAR);
 }
 
 
@@ -88,7 +113,7 @@ int main(int argc, char** argv) {
     int rangeMaxBin = args.find("rangeMaxBin") != args.end() ? std::stoi(args["rangeMaxBin"]) : 0;
 
     fs::path coloradarDirPath(coloradarDir);
-    coloradar::ColoradarPlusDataset dataset(coloradarDirPath);
+    coloradar::ColoradarDataset dataset(coloradarDirPath);
     std::vector<std::string> targetRuns;
     if (!runName.empty()) {
         targetRuns.push_back(runName);
@@ -97,17 +122,23 @@ int main(int argc, char** argv) {
     }
 
     H5::H5File file(coloradarDirPath / "dataset.h5", H5F_ACC_TRUNC);
+    auto config = dataset.cascadeConfig();
+    saveJsonToHDF5("radar_config", config->toJson(), file);
+
     for (const auto& runName : targetRuns) {
         auto run = dataset.getRun(runName);
-        auto poses = run->getPoses<octomath::Pose6D>();
-        auto radarPoses = run.interpolatePoses(poses, run->poseTimestamps(), run->cascadeTimestamps());
 
-        saveVectorToHDF5("timestamps", run->radarTimestamps(), file);
-        saveVectorToHDF5("poses", radarPoses, file);
+        auto poses = run->getPoses<octomath::Pose6D>();
+        auto radarPoses = run->interpolatePoses(poses, run->poseTimestamps(), run->cascadeTimestamps());
+        saveVectorToHDF5("timestamps", run->cascadeTimestamps(), file);
+        saveRadarPosesToHDF5("poses", radarPoses, file);
+
+        auto lidarMap = run->readLidarOctomap();
+        savePointCloudToHDF5("lidar_map", lidarMap, file);
 
         for (size_t j = 0; j < run->cascadeTimestamps().size(); ++j) {
             std::vector<float> rawHeatmap = run->getCascadeHeatmap(j);
-            std::vector<float> heatmap = coloradar::clipHeatmapImage(rawHeatmap, azimuthMaxBin, elevationMaxBin, rangeMaxBin, &dataset.cascadeConfig());
+            std::vector<float> heatmap = coloradar::clipHeatmapImage(rawHeatmap, azimuthMaxBin, elevationMaxBin, rangeMaxBin, config);
             saveHeatmapToHDF5("radar_heatmap_" + std::to_string(j), heatmap, file);
 
             auto cloud = run->getCascadePointcloud(j, 0);

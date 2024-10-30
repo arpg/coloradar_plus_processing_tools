@@ -80,7 +80,7 @@ pcl::PointCloud<coloradar::RadarPoint> coloradar::heatmapToPointcloud(const std:
     return cloud;
 }
 
-std::vector<float> coloradar::clipHeatmapImage(const std::vector<float>& image, const float& horizontalFov, const float& verticalFov, const float& range, coloradar::RadarConfig* config) {
+std::vector<float> coloradar::clipHeatmapImage(const std::vector<float>& image, const float& horizontalFov, const float& verticalFov, const float& range, const coloradar::RadarConfig* config) {
     if (horizontalFov <= 0 || horizontalFov > 360) {
         throw std::runtime_error("Invalid horizontal FOV value: expected 0 < FOV <= 360, got " + std::to_string(horizontalFov));
     }
@@ -103,29 +103,30 @@ std::vector<float> coloradar::clipHeatmapImage(const std::vector<float>& image, 
     return clipHeatmapImage(image, azimuthMaxBin, elevationMaxBin, rangeMaxBin, config);
 }
 
-std::vector<float> coloradar::clipHeatmapImage(const std::vector<float>& image, const int& azimuthMaxBin, const int& elevationMaxBin, const int& rangeMaxBin, coloradar::RadarConfig* config) {
+std::vector<float> coloradar::clipHeatmapImage(const std::vector<float>& image, const int& azimuthMaxBin, const int& elevationMaxBin, const int& rangeMaxBin, const coloradar::RadarConfig* config) {
     int azimuthBinLimit = config->numAzimuthBins / 2;
     int elevationBinLimit = config->numElevationBins / 2;
-    int rangeBinLimit = config->numRangeBins;
-    if (! 0 <= azimuthMaxBin < azimuthBinLimit) {
+    int rangeBinLimit = config->numPosRangeBins;
+    if (azimuthMaxBin < 0 || azimuthMaxBin >= azimuthBinLimit) {
         throw std::out_of_range("Invalid azimuthMaxBin selected: allowed selection from 0 to " + std::to_string(azimuthBinLimit - 1) + ", got " + std::to_string(azimuthMaxBin));
     }
-    if (! 0 <= elevationMaxBin < elevationBinLimit) {
+    if (elevationMaxBin < 0 || elevationMaxBin >= elevationBinLimit) {
         throw std::out_of_range("Invalid elevationMaxBin selected: allowed selection from 0 to " + std::to_string(elevationBinLimit - 1) + ", got " + std::to_string(elevationMaxBin));
     }
-    if (! 0 <= rangeMaxBin < rangeBinLimit) {
+    if (rangeMaxBin < 0 || rangeMaxBin >= rangeBinLimit) {
         throw std::out_of_range("Invalid rangeMaxBin selected: allowed selection from 0 to " + std::to_string(rangeBinLimit - 1) + ", got " + std::to_string(rangeMaxBin));
     }
     int azimuthLeftBin = azimuthBinLimit - azimuthMaxBin - 1;
     int azimuthRightBin = azimuthBinLimit + azimuthMaxBin;
     int elevationLeftBin = elevationBinLimit - elevationMaxBin - 1;
     int elevationRightBin = elevationBinLimit + elevationMaxBin;
+
     std::vector<float> clipped;
     for (int e = elevationLeftBin; e <= elevationRightBin; ++e) {
         for (int a = azimuthLeftBin; a <= azimuthRightBin; ++a) {
             for (int r = 0; r <= rangeMaxBin; ++r) {
                 for (int n = 0; n < 2; ++n) {
-                    int index = (((e * config->numAzimuthBins + a) * config->numRangeBins + r) * 2) + n;
+                    int index = (((e * config->numAzimuthBins + a) * config->numPosRangeBins + r) * 2) + n;
                     clipped.push_back(image[index]);
                 }
             }

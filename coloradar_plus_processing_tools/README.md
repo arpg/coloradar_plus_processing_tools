@@ -23,7 +23,7 @@ make -C build
 ```bash
 virtualenv -p python3 ./venv
 source ./venv/bin/activate
-pip install numpy open3d matplotlib
+pip install numpy open3d matplotlib h5py
 ```
 
 ## ROS 2 Build (needs revision)

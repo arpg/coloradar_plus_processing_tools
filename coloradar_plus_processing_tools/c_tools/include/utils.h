@@ -23,8 +23,8 @@ struct RadarPoint
 template <Pcl4dPointType PointT, template <PclCloudType> class CloudT> void octreeToPcl(const octomap::OcTree& tree, CloudT<PointT>& cloud);
 template <PclPointType PointT, template <PclCloudType> class CloudT> void filterFov(CloudT<PointT>& cloud, const float& horizontalFov, const float& verticalFov, const float& range);
 pcl::PointCloud<RadarPoint> heatmapToPointcloud(const std::vector<float>& heatmap, coloradar::RadarConfig* config, const float& intensityThresholdPercent = 0.0);
-std::vector<float> clipHeatmapImage(const std::vector<float>& image, const float& horizontalFov, const float& verticalFov, const float& range, coloradar::RadarConfig* config);
-std::vector<float> clipHeatmapImage(const std::vector<float>& image, const int& azimuthMaxBin, const int& elevationMaxBin, const int& rangeMaxBin, coloradar::RadarConfig* config);
+std::vector<float> clipHeatmapImage(const std::vector<float>& image, const float& horizontalFov, const float& verticalFov, const float& range, const coloradar::RadarConfig* config);
+std::vector<float> clipHeatmapImage(const std::vector<float>& image, const int& azimuthMaxBin, const int& elevationMaxBin, const int& rangeMaxBin, const coloradar::RadarConfig* config);
 
 
 class OctoPointcloud : public octomap::Pointcloud {

@@ -115,7 +115,7 @@ pcl::PointCloud<coloradar::RadarPoint> coloradar::ColoradarPlusRun::getRadarPoin
     pcl::PointCloud<coloradar::RadarPoint> cloud;
     std::ifstream file(binFilePath, std::ios::in | std::ios::binary);
     if (!file.is_open()) {
-        throw std::runtime_error("Failed to open file: " + cloudPath.string());
+        throw std::runtime_error("Failed to open file: " + binFilePath.string());
     }
     float maxIntensity = 0.0f;
     std::vector<coloradar::RadarPoint> points;
@@ -162,10 +162,10 @@ void coloradar::ColoradarPlusRun::createCascadePointclouds(const float& intensit
     createRadarPointclouds(cascadeConfig_, cascadeHeatmapsDirPath_, cascadeCloudsDirPath_, intensityThresholdPercent);
 }
 pcl::PointCloud<coloradar::RadarPoint> coloradar::ColoradarPlusRun::getCascadePointcloud(const std::filesystem::path& binFilePath, const float& intensityThresholdPercent) {
-    return getRadarPointcloud(binFilePath, cascadeConfig_);
+    return getRadarPointcloud(binFilePath, cascadeConfig_, intensityThresholdPercent);
 }
 pcl::PointCloud<coloradar::RadarPoint> coloradar::ColoradarPlusRun::getCascadePointcloud(const int& cloudIdx, const float& intensityThresholdPercent) {
-    return getCascadePointcloud(cascadeCloudsDirPath_ / "data" / ("radar_pointcloud_" + std::to_string(cloudIdx) + ".bin"));
+    return getCascadePointcloud(cascadeCloudsDirPath_ / "data" / ("radar_pointcloud_" + std::to_string(cloudIdx) + ".bin"), intensityThresholdPercent);
 }
 
 

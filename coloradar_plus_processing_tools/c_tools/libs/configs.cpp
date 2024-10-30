@@ -429,3 +429,95 @@ void coloradar::CascadeConfig::init(const std::filesystem::path& calibDir) {
     initPhaseFrequencyParams(phaseFrequencyConfigFilePath);
     initInternalParams();
 }
+
+
+std::string coloradar::RadarConfig::toJson() const {
+    Json::Value jsonConfig;
+
+    // Heatmap parameters
+    jsonConfig["heatmap"]["numRangeBins"] = numRangeBins;
+    jsonConfig["heatmap"]["numPosRangeBins"] = numPosRangeBins;
+    jsonConfig["heatmap"]["numElevationBins"] = numElevationBins;
+    jsonConfig["heatmap"]["numAzimuthBins"] = numAzimuthBins;
+    jsonConfig["heatmap"]["rangeBinWidth"] = rangeBinWidth;
+    jsonConfig["heatmap"]["azimuthBins"] = Json::arrayValue;
+    for (const auto& bin : azimuthBins) jsonConfig["heatmap"]["azimuthBins"].append(bin);
+    jsonConfig["heatmap"]["elevationBins"] = Json::arrayValue;
+    for (const auto& bin : elevationBins) jsonConfig["heatmap"]["elevationBins"].append(bin);
+
+    // Antenna parameters
+    jsonConfig["antenna"]["designFrequency"] = designFrequency;
+    jsonConfig["antenna"]["numTxAntennas"] = numTxAntennas;
+    jsonConfig["antenna"]["numRxAntennas"] = numRxAntennas;
+    jsonConfig["antenna"]["txCenters"] = Json::arrayValue;
+    for (const auto& center : txCenters) {
+        Json::Value point;
+        point["x"] = center.x;
+        point["y"] = center.y;
+        jsonConfig["antenna"]["txCenters"].append(point);
+    }
+    jsonConfig["antenna"]["rxCenters"] = Json::arrayValue;
+    for (const auto& center : rxCenters) {
+        Json::Value point;
+        point["x"] = center.x;
+        point["y"] = center.y;
+        jsonConfig["antenna"]["rxCenters"].append(point);
+    }
+
+    // Waveform parameters
+    jsonConfig["waveform"]["numAdcSamplesPerChirp"] = numAdcSamplesPerChirp;
+    jsonConfig["waveform"]["numChirpsPerFrame"] = numChirpsPerFrame;
+    jsonConfig["waveform"]["adcSampleFrequency"] = adcSampleFrequency;
+    jsonConfig["waveform"]["startFrequency"] = startFrequency;
+    jsonConfig["waveform"]["idleTime"] = idleTime;
+    jsonConfig["waveform"]["adcStartTime"] = adcStartTime;
+    jsonConfig["waveform"]["rampEndTime"] = rampEndTime;
+    jsonConfig["waveform"]["frequencySlope"] = frequencySlope;
+
+    // Calibration parameters
+    jsonConfig["calibration"]["numDopplerBins"] = numDopplerBins;
+    jsonConfig["calibration"]["couplingCalibMatrix"] = Json::arrayValue;
+    for (const auto& element : couplingCalibMatrix) {
+        Json::Value complexElem;
+        complexElem["real"] = element.real();
+        complexElem["imag"] = element.imag();
+        jsonConfig["calibration"]["couplingCalibMatrix"].append(complexElem);
+    }
+
+    // Phase frequency parameters
+    jsonConfig["phaseFrequency"]["calibAdcSampleFrequency"] = calibAdcSampleFrequency;
+    jsonConfig["phaseFrequency"]["calibFrequencySlope"] = calibFrequencySlope;
+    jsonConfig["phaseFrequency"]["frequencyCalibMatrix"] = Json::arrayValue;
+    for (const auto& element : frequencyCalibMatrix) {
+        Json::Value complexElem;
+        complexElem["real"] = element.real();
+        complexElem["imag"] = element.imag();
+        jsonConfig["phaseFrequency"]["frequencyCalibMatrix"].append(complexElem);
+    }
+    jsonConfig["phaseFrequency"]["phaseCalibMatrix"] = Json::arrayValue;
+    for (const auto& element : phaseCalibMatrix) {
+        Json::Value complexElem;
+        complexElem["real"] = element.real();
+        complexElem["imag"] = element.imag();
+        jsonConfig["phaseFrequency"]["phaseCalibMatrix"].append(complexElem);
+    }
+
+    // Internal parameters
+    jsonConfig["internal"]["numAzimuthBeams"] = numAzimuthBeams;
+    jsonConfig["internal"]["numElevationBeams"] = numElevationBeams;
+    jsonConfig["internal"]["azimuthApertureLen"] = azimuthApertureLen;
+    jsonConfig["internal"]["elevationApertureLen"] = elevationApertureLen;
+    jsonConfig["internal"]["numAngles"] = numAngles;
+    jsonConfig["internal"]["numVirtualElements"] = numVirtualElements;
+    jsonConfig["internal"]["virtualArrayMap"] = Json::arrayValue;
+    for (const auto& val : virtualArrayMap) jsonConfig["internal"]["virtualArrayMap"].append(val);
+    jsonConfig["internal"]["azimuthAngles"] = Json::arrayValue;
+    for (const auto& angle : azimuthAngles) jsonConfig["internal"]["azimuthAngles"].append(angle);
+    jsonConfig["internal"]["elevationAngles"] = Json::arrayValue;
+    for (const auto& angle : elevationAngles) jsonConfig["internal"]["elevationAngles"].append(angle);
+    jsonConfig["internal"]["dopplerBinWidth"] = dopplerBinWidth;
+
+    Json::StreamWriterBuilder writer;
+    std::string jsonString = Json::writeString(writer, jsonConfig);
+    return jsonString;
+}

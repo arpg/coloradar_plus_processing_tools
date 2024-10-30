@@ -16,10 +16,12 @@ protected:
     Eigen::Affine3f imuTransform_;
     Eigen::Affine3f lidarTransform_;
     Eigen::Affine3f cascadeTransform_;
-    Eigen::Affine3f loadTransform(const std::filesystem::path& filePath);
-    virtual void initCascadeTransform();
 
     RadarConfig* cascadeConfig_;
+
+    ColoradarPlusDataset() = default;
+    void init(const std::filesystem::path& pathToDataset);
+    Eigen::Affine3f loadTransform(const std::filesystem::path& filePath);
 
 public:
     ColoradarPlusDataset(const std::filesystem::path& pathToDataset);
@@ -38,7 +40,6 @@ public:
 class ColoradarDataset : public ColoradarPlusDataset {
 protected:
     Eigen::Affine3f singleChipTransform_;
-    virtual void initCascadeTransform() override;
 
     RadarConfig* singleChipConfig_;
 

@@ -23,9 +23,10 @@ find_package(PCL 1.12 REQUIRED)
 find_package(octomap REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(CUDA 12.6)
+find_package(HDF5 REQUIRED COMPONENTS C CXX)
 
 set(CUDA_LIBS ${CUDA_LIBRARIES} ${CUDA_CUFFT_LIBRARIES})
-include_directories(${PROJECT_SOURCE_DIR}/include ${PCL_INCLUDE_DIRS} ${OCTOMAP_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
+include_directories(${PROJECT_SOURCE_DIR}/include ${PCL_INCLUDE_DIRS} ${OCTOMAP_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS})
 
 ### LIBS
 
@@ -37,7 +38,7 @@ add_library(coloradar_tools SHARED
     libs/coloradar_run.cpp
     libs/dataset.cpp
 )
-target_link_libraries(coloradar_tools ${PCL_LIBRARIES} ${OCTOMAP_LIBRARIES})
+target_link_libraries(coloradar_tools ${PCL_LIBRARIES} ${OCTOMAP_LIBRARIES} ${HDF5_LIBRARIES})
 
 
 if(CUDA_FOUND)
