@@ -297,13 +297,14 @@ class ColoradarDataset:
         self.test_output_dir = os.path.join(self.coloradar_path, 'test_output')
         if not os.path.isdir(self.test_output_dir):
             os.mkdir(self.test_output_dir)
+        self.build_dir = os.path.join('..', 'build')
 
     def list_runs(self):
         return os.listdir(self.runs_path)
 
     def interpolate_poses_for_lidar(self, run_name):
         command = [
-            './build/interpolate_poses_for_lidar',
+            os.path.join(self.build_dir, 'interpolate_poses_for_lidar'),
             self.coloradar_path, run_name,
             f'outputFilePath={os.path.join(self.test_output_dir, run_name + "_lidar_poses_interpolated.txt")}'
         ]
@@ -311,7 +312,7 @@ class ColoradarDataset:
 
     def interpolate_poses_for_radar(self, run_name):
         command = [
-            './build/interpolate_poses_for_radar',
+            os.path.join(self.build_dir, 'interpolate_poses_for_radar'),
             self.coloradar_path, run_name,
             f'outputFilePath={os.path.join(self.test_output_dir, run_name + "_radar_poses_interpolated.txt")}'
         ]
@@ -319,6 +320,7 @@ class ColoradarDataset:
 
     def show_poses(self, run_name):
         self.interpolate_poses_for_lidar(run_name)
+        self.interpolate_poses_for_radar(run_name)
 
         gt_timestamps_path = os.path.join(self.runs_path, run_name, 'groundtruth', 'timestamps.txt')
         lidar_timestamps_path = os.path.join(self.runs_path, run_name, 'lidar', 'timestamps.txt')
@@ -348,7 +350,8 @@ class ColoradarDataset:
     ):
         print('Building map for', run_name, '...')
         command = [
-            './build/build_octomap', self.coloradar_path, run_name,
+            os.path.join(self.build_dir, 'build_octomap'),
+            self.coloradar_path, run_name,
             f'map_resolution={map_resolution}',
             f'horizontalFov={horizontal_fov}',
             f'verticalFov={vertical_fov}',
@@ -381,6 +384,25 @@ class ColoradarDataset:
         gt_timestamps_path = os.path.join(self.runs_path, run_name, 'groundtruth', 'timestamps.txt')
         gt_poses_path = os.path.join(self.runs_path, run_name, 'groundtruth', 'groundtruth_poses.txt')
 
+    def filter_cloud(
+            self, pcd_file_path, output_dir=None,
+            random_pcl_radius=10, random_pcl_step=0.5, random_pcl_empty_portion=0.5,
+            horizontal_fov=360, vertical_fov=33.2, max_range=20
+    ):
+        command = [
+            os.path.join(self.build_dir, 'filter_cloud'),
+            f'pcdFilePath={pcd_file_path}',
+            f'randomPclRadius={random_pcl_radius}',
+            f'randomPclStep={random_pcl_step}',
+            f'randomPclEmptyPortion={random_pcl_empty_portion}',
+            f'horizontalFov={horizontal_fov}',
+            f'verticalFov={vertical_fov}',
+            f'range={max_range}'
+        ]
+        if output_dir:
+            command.append(f'outputDir={output_dir}')
+        _run_command(command)
+
 
 def _run_command(command):
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, bufsize=1)
@@ -392,25 +414,6 @@ def _run_command(command):
     process.stderr.close()
     process.wait()
 
-
-def filter_cloud(
-        pcd_file_path, output_dir=None,
-        random_pcl_radius=10, random_pcl_step=0.5, random_pcl_empty_portion=0.5,
-        horizontal_fov=360, vertical_fov=33.2, max_range=20
-):
-    command = [
-        './build/filter_cloud',
-        f'pcdFilePath={pcd_file_path}',
-        f'randomPclRadius={random_pcl_radius}',
-        f'randomPclStep={random_pcl_step}',
-        f'randomPclEmptyPortion={random_pcl_empty_portion}',
-        f'horizontalFov={horizontal_fov}',
-        f'verticalFov={vertical_fov}',
-        f'range={max_range}'
-    ]
-    if output_dir:
-        command.append(f'outputDir={output_dir}')
-    _run_command(command)
 
 def plot_translations(gt, other, gt_ts, other_ts, title, label):
     plt.figure(figsize=(10, 6))
