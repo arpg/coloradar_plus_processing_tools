@@ -23,8 +23,15 @@ struct RadarPoint
 template <Pcl4dPointType PointT, template <PclCloudType> class CloudT> void octreeToPcl(const octomap::OcTree& tree, CloudT<PointT>& cloud);
 template <PclPointType PointT, template <PclCloudType> class CloudT> void filterFov(CloudT<PointT>& cloud, const float& horizontalFov, const float& verticalFov, const float& range);
 pcl::PointCloud<RadarPoint> heatmapToPointcloud(const std::vector<float>& heatmap, coloradar::RadarConfig* config, const float& intensityThresholdPercent = 0.0);
-std::vector<float> clipHeatmapImage(const std::vector<float>& image, const float& horizontalFov, const float& verticalFov, const float& range, const coloradar::RadarConfig* config);
-std::vector<float> clipHeatmapImage(const std::vector<float>& image, const int& azimuthMaxBin, const int& elevationMaxBin, const int& rangeMaxBin, const coloradar::RadarConfig* config);
+
+void convertFovToRadarBins(const float& horizontalFov, const float& verticalFov, const float& range, const RadarConfig* config, int& azimuthMaxBin, int& elevationMaxBin, int& rangeMaxBin);
+std::vector<float> clipHeatmapImage(const std::vector<float>& image, const float& horizontalFov, const float& verticalFov, const float& range, const RadarConfig* config);
+std::vector<float> clipHeatmapImage(const std::vector<float>& image, const int& azimuthMaxBin, const int& elevationMaxBin, const int& rangeMaxBin, const RadarConfig* config);
+
+void convertElevationRangeToBins(float elevationMinDeg, float elevationMaxDeg, const RadarConfig* config, int& elevationMinBin, int& elevationMaxBin);
+std::vector<float> collapseHeatmapElevation(const std::vector<float>& image, int elevationMinBin, int elevationMaxBin, const RadarConfig* config);
+std::vector<float> collapseHeatmapElevation(const std::vector<float>& image, float elevationMinDeg, float elevationMaxDeg, const RadarConfig* config);
+std::vector<float> removeDoppler(const std::vector<float>& image, const RadarConfig* config);
 
 
 class OctoPointcloud : public octomap::Pointcloud {

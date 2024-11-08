@@ -80,7 +80,8 @@ pcl::PointCloud<coloradar::RadarPoint> coloradar::heatmapToPointcloud(const std:
     return cloud;
 }
 
-std::vector<float> coloradar::clipHeatmapImage(const std::vector<float>& image, const float& horizontalFov, const float& verticalFov, const float& range, const coloradar::RadarConfig* config) {
+
+void coloradar::convertFovToRadarBins(const float& horizontalFov, const float& verticalFov, const float& range, const coloradar::RadarConfig* config, int& azimuthMaxBin, int& elevationMaxBin, int& rangeMaxBin) {
     if (horizontalFov <= 0 || horizontalFov > 360) {
         throw std::runtime_error("Invalid horizontal FOV value: expected 0 < FOV <= 360, got " + std::to_string(horizontalFov));
     }
@@ -95,12 +96,13 @@ std::vector<float> coloradar::clipHeatmapImage(const std::vector<float>& image, 
 
     auto it = std::lower_bound(config->azimuthBins.begin(), config->azimuthBins.end(), -horizontalHalfFovRad);
     int binIdx = std::distance(config->azimuthBins.begin(), --it);
-    int azimuthMaxBin = config->numAzimuthBins - binIdx - 1;
+    azimuthMaxBin = config->numAzimuthBins - binIdx - 1;
+
     it = std::lower_bound(config->elevationBins.begin(), config->elevationBins.end(), -verticalHalfFovRad);
     binIdx = std::distance(config->elevationBins.begin(), --it);
-    int elevationMaxBin = config->numElevationBins - binIdx - 1;
-    int rangeMaxBin = static_cast<int>(std::ceil(range / config->rangeBinWidth));
-    return clipHeatmapImage(image, azimuthMaxBin, elevationMaxBin, rangeMaxBin, config);
+    elevationMaxBin = config->numElevationBins - binIdx - 1;
+
+    rangeMaxBin = static_cast<int>(std::ceil(range / config->rangeBinWidth));
 }
 
 std::vector<float> coloradar::clipHeatmapImage(const std::vector<float>& image, const int& azimuthMaxBin, const int& elevationMaxBin, const int& rangeMaxBin, const coloradar::RadarConfig* config) {
@@ -120,7 +122,6 @@ std::vector<float> coloradar::clipHeatmapImage(const std::vector<float>& image, 
     int azimuthRightBin = azimuthBinLimit + azimuthMaxBin;
     int elevationLeftBin = elevationBinLimit - elevationMaxBin - 1;
     int elevationRightBin = elevationBinLimit + elevationMaxBin;
-
     std::vector<float> clipped;
     for (int e = elevationLeftBin; e <= elevationRightBin; ++e) {
         for (int a = azimuthLeftBin; a <= azimuthRightBin; ++a) {
@@ -133,4 +134,65 @@ std::vector<float> coloradar::clipHeatmapImage(const std::vector<float>& image, 
         }
     }
     return clipped;
+}
+
+std::vector<float> coloradar::clipHeatmapImage(const std::vector<float>& image, const float& horizontalFov, const float& verticalFov, const float& range, const coloradar::RadarConfig* config) {
+    int azimuthMaxBin, elevationMaxBin, rangeMaxBin;
+    coloradar::convertFovToRadarBins(horizontalFov, verticalFov, range, config, azimuthMaxBin, elevationMaxBin, rangeMaxBin);
+    return coloradar::clipHeatmapImage(image, azimuthMaxBin, elevationMaxBin, rangeMaxBin, config);
+}
+
+
+void coloradar::convertElevationRangeToBins(float elevationMinDeg, float elevationMaxDeg, const coloradar::RadarConfig* config, int& elevationMinBin, int& elevationMaxBin) {
+    if (elevationMinDeg < -90 || elevationMaxDeg > 90 || elevationMinDeg >= elevationMaxDeg) {
+        throw std::runtime_error("Invalid elevation range: expected -90 <= min < max <= 90");
+    }
+    float elevation_min_rad = elevationMinDeg * M_PI / 180.0f;
+    float elevation_max_rad = elevationMaxDeg * M_PI / 180.0f;
+
+    auto min_it = std::lower_bound(config->elevationBins.begin(), config->elevationBins.end(), elevation_min_rad);
+    elevationMinBin = std::distance(config->elevationBins.begin(), min_it);
+
+    auto max_it = std::upper_bound(config->elevationBins.begin(), config->elevationBins.end(), elevation_max_rad);
+    elevationMaxBin = std::distance(config->elevationBins.begin(), max_it) - 1;
+}
+
+std::vector<float> coloradar::collapseHeatmapElevation(const std::vector<float>& image, int elevationMinBin, int elevationMaxBin, const coloradar::RadarConfig* config) {
+    if (elevationMinBin < 0 || elevationMaxBin >= config->numElevationBins || elevationMinBin > elevationMaxBin) {
+        throw std::out_of_range("Invalid elevation bins selected.");
+    }
+    std::vector<float> collapsed_image;
+    collapsed_image.reserve(config->numAzimuthBins * config->numPosRangeBins * 2);
+
+    for (int a = 0; a < config->numAzimuthBins; ++a) {
+        for (int r = 0; r < config->numPosRangeBins; ++r) {
+            float maxIntensity = -std::numeric_limits<float>::infinity(), maxDoppler;
+            for (int e = elevationMinBin; e <= elevationMaxBin; ++e) {
+                int index = (((e * config->numAzimuthBins + a) * config->numPosRangeBins + r) * 2);
+                if (image[index] > maxIntensity) {
+                    maxIntensity = image[index];
+                    maxDoppler = image[index + 1];
+                }
+            }
+            collapsed_image.push_back(maxIntensity);
+            collapsed_image.push_back(maxDoppler);
+        }
+    }
+    return collapsed_image;
+}
+
+std::vector<float> coloradar::collapseHeatmapElevation(const std::vector<float>& image, float elevationMinDeg, float elevationMaxDeg, const coloradar::RadarConfig* config) {
+    int elevationMinBin, elevationMaxBin;
+    coloradar::convertElevationRangeToBins(elevationMinDeg, elevationMaxDeg, config, elevationMinBin, elevationMaxBin);
+    return coloradar::collapseHeatmapElevation(image, elevationMinBin, elevationMaxBin, config);
+}
+
+
+std::vector<float> coloradar::removeDoppler(const std::vector<float>& image, const coloradar::RadarConfig* config) {
+    std::vector<float> intensityImage;
+    intensityImage.reserve(image.size() / 2);
+    for (size_t i = 0; i < image.size(); i += 2) {
+        intensityImage.push_back(image[i]);
+    }
+    return intensityImage;
 }

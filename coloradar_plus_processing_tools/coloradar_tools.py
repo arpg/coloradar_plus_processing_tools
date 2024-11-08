@@ -309,11 +309,11 @@ class ColoradarDataset:
         ]
         _run_command(command)
 
-    def interpolate_poses_for_cascade(self, run_name):
+    def interpolate_poses_for_radar(self, run_name):
         command = [
-            './build/interpolate_poses_for_cascade',
+            './build/interpolate_poses_for_radar',
             self.coloradar_path, run_name,
-            f'outputFilePath={os.path.join(self.test_output_dir, run_name + "_cascade_poses_interpolated.txt")}'
+            f'outputFilePath={os.path.join(self.test_output_dir, run_name + "_radar_poses_interpolated.txt")}'
         ]
         _run_command(command)
 
@@ -325,18 +325,22 @@ class ColoradarDataset:
         cascade_timestamps_path = os.path.join(self.runs_path, run_name, 'cascade', 'heatmaps', 'timestamps.txt')
         gt_poses_path = os.path.join(self.runs_path, run_name, 'groundtruth', 'groundtruth_poses.txt')
         lidar_poses_path = os.path.join(self.test_output_dir, run_name + "_lidar_poses_interpolated.txt")
-        cascade_poses_path = os.path.join(self.test_output_dir, run_name + "_cascade_poses_interpolated.txt")
+        cascade_poses_path = os.path.join(self.test_output_dir, run_name + "_radar_poses_interpolated.txt")
         for fp in gt_timestamps_path, lidar_timestamps_path, cascade_timestamps_path, gt_poses_path, lidar_poses_path, cascade_poses_path:
             if not os.path.isfile(fp):
                 raise ValueError(f'File {fp} does not exist')
 
-        gt_timestamps, lidar_timestamps = np.loadtxt(gt_timestamps_path), np.loadtxt(lidar_timestamps_path)
-        gt_poses, lidar_poses = np.loadtxt(gt_poses_path), np.loadtxt(lidar_poses_path)
+        gt_timestamps, lidar_timestamps, cascade_timestamps = np.loadtxt(gt_timestamps_path), np.loadtxt(lidar_timestamps_path), np.loadtxt(cascade_timestamps_path)
+        gt_poses, lidar_poses, cascade_poses = np.loadtxt(gt_poses_path), np.loadtxt(lidar_poses_path), np.loadtxt(cascade_poses_path)
         gt_translations, gt_rotations = gt_poses[:, :3], gt_poses[:, 3:]
         lidar_translations, lidar_rotations = lidar_poses[:, :3], lidar_poses[:, 3:]
+        cascade_translations, cascade_rotations = cascade_poses[:, :3], cascade_poses[:, 3:]
 
-        plot_translations(gt_translations, lidar_translations, gt_timestamps, lidar_timestamps, 'Ground Truth vs Lidar', 'lidar')
-        plot_rotations(gt_rotations, lidar_rotations, gt_timestamps, lidar_timestamps, 'Ground Truth vs Lidar', 'lidar')
+        # plot_translations(gt_translations, lidar_translations, gt_timestamps, lidar_timestamps, 'Ground Truth vs Lidar', 'lidar')
+        # plot_rotations(gt_rotations, lidar_rotations, gt_timestamps, lidar_timestamps, 'Ground Truth vs Lidar', 'lidar')
+
+        plot_translations(gt_translations, cascade_translations, gt_timestamps, cascade_timestamps, 'Ground Truth vs Radar', 'radar')
+        plot_rotations(gt_rotations, cascade_rotations, gt_timestamps, cascade_timestamps, 'Ground Truth vs Radar', 'radar')
 
     def build_octomap(
             self, run_name, map_resolution=0.1,

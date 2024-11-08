@@ -105,7 +105,7 @@ void report(
         std::cout << "Matched " << matchIdx.size() << " indices from " << matchIdx[0] << " to " << matchIdx[matchIdx.size() - 1] << " (" << matchRate * 100 << "%)" << std::endl << std::endl;
         // std::cout << "Rate " << matchRate << " calculated for cube number " << i << " and sample heatmap " << entry << std::endl << std::endl;
     }
-    // printArrays(referenceHeatmap, computedHeatmap, 10);
+    printArrays(referenceHeatmap, computedHeatmap, 10);
 }
 
 void compareHeatmapArrays(
@@ -211,10 +211,10 @@ int main(int argc, char** argv) {
     // fs::path aCubesFolder = coloradarDirPath / "ros_output" / "single_cube_bins";
     std::vector<std::string> dHmFilenames = collectHeatmapFilenames(dHmFolder);  // = {"unsorted_heatmap2_0.bin"};
     // std::vector<std::string> containerHmFilenames = {"heatmap_0.bin", "heatmap_1.bin", "heatmap_2.bin", "heatmap_3.bin", "heatmap_4.bin", "heatmap_5.bin", "heatmap_6.bin", "heatmap_7.bin", "heatmap_8.bin", "heatmap_9.bin"};
-    // std::vector<std::string> containerHmFilenames = {"heatmap_3.bin"};
-    std::vector<std::string> containerHmFilenames = collectHeatmapFilenames(containerHmFolder);
+    std::vector<std::string> containerHmFilenames = {"heatmap_0.bin"};
+    // std::vector<std::string> containerHmFilenames = collectHeatmapFilenames(containerHmFolder);
     std::vector<int> datasetHmIdx(50); std::iota(std::begin(datasetHmIdx), std::end(datasetHmIdx), 0); // = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, };
-    std::vector<int> computedHmIdx(523); std::iota(std::begin(computedHmIdx), std::end(computedHmIdx), 0);
+    std::vector<int> computedHmIdx(1); std::iota(std::begin(computedHmIdx), std::end(computedHmIdx), 0);
     // std::vector<int> computedHmIdx = {15, 16, 17, 18, 19, 20, 21, 22, 23, 24};
     // std::vector<int> computedHmIdx = {5};
 

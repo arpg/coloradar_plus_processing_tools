@@ -7,7 +7,7 @@ namespace fs = std::filesystem;
 
 #include <sstream>
 #include <iomanip>
-#include <json/json.h>  // Assuming you have a JSON library, like nlohmann/json or similar
+#include <json/json.h>
 
 
 std::unordered_map<std::string, std::string> parseArguments(int argc, char** argv) {
@@ -111,6 +111,8 @@ int main(int argc, char** argv) {
     int azimuthMaxBin = args.find("azimuthMaxBin") != args.end() ? std::stoi(args["azimuthMaxBin"]) : 0;
     int elevationMaxBin = args.find("elevationMaxBin") != args.end() ? std::stoi(args["elevationMaxBin"]) : 0;
     int rangeMaxBin = args.find("rangeMaxBin") != args.end() ? std::stoi(args["rangeMaxBin"]) : 0;
+    bool use_elevation = false, use_doppler = false;
+    int elevation_projection_range_min = 0, elevation_projection_range_max = 0;
 
     fs::path coloradarDirPath(coloradarDir);
     coloradar::ColoradarDataset dataset(coloradarDirPath);

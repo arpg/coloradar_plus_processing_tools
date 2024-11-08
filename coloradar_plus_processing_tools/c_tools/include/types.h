@@ -12,8 +12,15 @@ namespace coloradar {
 template<typename T>
 concept Pcl3dPointType = std::is_base_of_v<pcl::PointXYZ, T>;
 
+//template<typename T>
+//concept Pcl4dPointType = std::is_base_of_v<pcl::PointXYZI, T>;
 template<typename T>
-concept Pcl4dPointType = std::is_base_of_v<pcl::PointXYZI, T>;
+concept Pcl4dPointType = requires(T point) {
+    { point.x } -> std::convertible_to<float>;
+    { point.y } -> std::convertible_to<float>;
+    { point.z } -> std::convertible_to<float>;
+    { point.intensity } -> std::convertible_to<float>;
+};
 
 template<typename T>
 concept PclPointType = Pcl3dPointType<T> || Pcl4dPointType<T>;
