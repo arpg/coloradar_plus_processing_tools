@@ -1,11 +1,21 @@
 import os
 import struct
 import subprocess
+import sys
 
 import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 import numpy as np
 import open3d as o3d
+
+
+cwd = os.getcwd()
+if cwd.endswith(os.path.join("coloradar_plus_processing_tools", "coloradar_plus_processing_tools")):
+    build_dir = os.path.join(cwd, "..", "build")
+else:
+    build_dir = os.path.join(cwd, "build")
+sys.path.append(build_dir)
+import coloradar_dataset_tools as ct
 
 
 def read_tf_file(filename):
@@ -267,7 +277,7 @@ def show_pcl_prob(pcd_file_path, prob_threshold=0):
     axes = o3d.geometry.TriangleMesh.create_coordinate_frame(size=10.0)
     o3d.visualization.draw_geometries([pcd, axes])
 
-def show_radar_pointcloud(file_path):
+def show_radar_pointcloud_file(file_path):
     with open(file_path, 'rb') as f:
         cloud_bytes = f.read()
     cloud_vals = np.frombuffer(cloud_bytes, dtype=np.float32)
@@ -281,6 +291,28 @@ def show_radar_pointcloud(file_path):
     colors = cmap(normalized_intensities)[:, :3]
     pcd = o3d.geometry.PointCloud()
     pcd.points = o3d.utility.Vector3dVector(points)
+    pcd.colors = o3d.utility.Vector3dVector(colors)
+    axes = o3d.geometry.TriangleMesh.create_coordinate_frame(size=10.0)
+    o3d.visualization.draw_geometries([pcd, axes], "Radar Point Cloud Visualization")
+
+
+def show_radar_pointcloud(cloud, intensity_threshold_percent=0.0):
+    points, intensities = [], []
+    print('loading', len(cloud.points), 'points')
+    for point in cloud.points:
+        points.append(np.array([point.x, point.y, point.z]))
+        intensities.append(point.intensity)
+    print('finish loading points')
+    points, intensities = np.array(points), np.array(intensities)
+    min_intensity = np.min(intensities)
+    max_intensity = np.max(intensities)
+    normalized_intensities = (intensities - min_intensity) / (max_intensity - min_intensity)
+    intensity_threshold = intensity_threshold_percent / 100 * max_intensity
+    filtered_idx = normalized_intensities >= intensity_threshold
+    cmap = plt.get_cmap("plasma")
+    colors = cmap(normalized_intensities[filtered_idx])
+    pcd = o3d.geometry.PointCloud()
+    pcd.points = o3d.utility.Vector3dVector(points[filtered_idx])
     pcd.colors = o3d.utility.Vector3dVector(colors)
     axes = o3d.geometry.TriangleMesh.create_coordinate_frame(size=10.0)
     o3d.visualization.draw_geometries([pcd, axes], "Radar Point Cloud Visualization")

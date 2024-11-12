@@ -268,6 +268,12 @@ std::vector<float> coloradar::ColoradarRun::getSingleChipHeatmap(const std::file
 std::vector<float> coloradar::ColoradarRun::getSingleChipHeatmap(const int& hmIdx) {
     return getSingleChipHeatmap(singleChipHeatmapsDirPath_ / "data" / ("heatmap_" + std::to_string(hmIdx) + ".bin"));
 }
-void coloradar::ColoradarRun::createSingleChipPointclouds(const float& intensityThresholdPercent) {
-    createRadarPointclouds(singleChipConfig_, singleChipHeatmapsDirPath_, singleChipCloudsDirPath_, intensityThresholdPercent);
+pcl::PointCloud<coloradar::RadarPoint> coloradar::ColoradarRun::getSingleChipPointcloud(const std::filesystem::path& binFilePath, const float& intensityThresholdPercent) {
+    return getRadarPointcloud(binFilePath, singleChipConfig_, intensityThresholdPercent);
 }
+pcl::PointCloud<coloradar::RadarPoint> coloradar::ColoradarRun::getSingleChipPointcloud(const int& cloudIdx, const float& intensityThresholdPercent) {
+    return getSingleChipPointcloud(singleChipCloudsDirPath_ / "data" / ("radar_pointcloud_" + std::to_string(cloudIdx) + ".bin"), intensityThresholdPercent);
+}
+//void coloradar::ColoradarRun::createSingleChipPointclouds(const float& intensityThresholdPercent) {
+//    createRadarPointclouds(singleChipConfig_, singleChipHeatmapsDirPath_, singleChipCloudsDirPath_, intensityThresholdPercent);
+//}

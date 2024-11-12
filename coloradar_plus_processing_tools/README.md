@@ -6,6 +6,10 @@
 ```bash
 apt install libpcl-dev liboctomap-dev libgtest-dev libopencv-dev
 ```
+Optional dependencies:
+```bash
+apt install pybind11-dev
+```
 
 #### 2. Build:
 ```bash

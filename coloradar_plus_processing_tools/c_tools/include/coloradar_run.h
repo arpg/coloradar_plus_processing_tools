@@ -29,8 +29,8 @@ protected:
     RadarConfig* cascadeConfig_;
     std::vector<int16_t> getDatacube(const std::filesystem::path& binFilePath, RadarConfig* config);
     std::vector<float> getHeatmap(const std::filesystem::path& binFilePath, RadarConfig* config);
-    void createRadarPointclouds(RadarConfig* config, const std::filesystem::path& heatmapDirPath, const std::filesystem::path& pointcloudDirPath, const float& intensityThresholdPercent);
-    pcl::PointCloud<RadarPoint> getRadarPointcloud(const std::filesystem::path& binFilePath, RadarConfig* config, const float& intensityThresholdPercent);
+    void createRadarPointclouds(RadarConfig* config, const std::filesystem::path& heatmapDirPath, const std::filesystem::path& pointcloudDirPath, const float& intensityThresholdPercent = 0.0);
+    pcl::PointCloud<RadarPoint> getRadarPointcloud(const std::filesystem::path& binFilePath, RadarConfig* config, const float& intensityThresholdPercent = 0.0);
 
 public:
     const std::string name;
@@ -48,12 +48,12 @@ public:
     std::vector<float> getCascadeHeatmap(const std::filesystem::path& binFilePath);
     std::vector<float> getCascadeHeatmap(const int& hmIdx);
 
-    void createCascadePointclouds(const float& intensityThresholdPercent);
-    pcl::PointCloud<RadarPoint> getCascadePointcloud(const std::filesystem::path& binFilePath, const float& intensityThresholdPercent);
-    pcl::PointCloud<RadarPoint> getCascadePointcloud(const int& cloudIdx, const float& intensityThresholdPercent);
+    void createCascadePointclouds(const float& intensityThresholdPercent = 0.0);
+    pcl::PointCloud<RadarPoint> getCascadePointcloud(const std::filesystem::path& binFilePath, const float& intensityThresholdPercent = 0.0);
+    pcl::PointCloud<RadarPoint> getCascadePointcloud(const int& cloudIdx, const float& intensityThresholdPercent = 0.0);
 
     template<PoseType PoseT> std::vector<PoseT> getPoses();
-    template<coloradar::PoseType PoseT> std::vector<PoseT> interpolatePoses(const std::vector<PoseT>& poses, const std::vector<double>& poseTimestamps, const std::vector<double>& targetTimestamps);
+    template<PoseType PoseT> std::vector<PoseT> interpolatePoses(const std::vector<PoseT>& poses, const std::vector<double>& poseTimestamps, const std::vector<double>& targetTimestamps);
 
     template<PclCloudType CloudT> CloudT getLidarPointCloud(const std::filesystem::path& binPath);
     template<OctomapCloudType CloudT> CloudT getLidarPointCloud(const std::filesystem::path& binPath);
@@ -104,7 +104,9 @@ public:
     std::vector<int16_t> getSingleChipDatacube(const int& cubeIdx);
     std::vector<float> getSingleChipHeatmap(const std::filesystem::path& binFilePath);
     std::vector<float> getSingleChipHeatmap(const int& hmIdx);
-    void createSingleChipPointclouds(const float& intensityThresholdPercent);
+    pcl::PointCloud<RadarPoint> getSingleChipPointcloud(const std::filesystem::path& binFilePath, const float& intensityThresholdPercent = 0.0);
+    pcl::PointCloud<RadarPoint> getSingleChipPointcloud(const int& cloudIdx, const float& intensityThresholdPercent = 0.0);
+    // void createSingleChipPointclouds(const float& intensityThresholdPercent = 0.0);
 };
 
 }

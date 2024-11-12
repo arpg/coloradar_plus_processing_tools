@@ -24,6 +24,7 @@ find_package(octomap REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(CUDA 12.6)
 find_package(HDF5 REQUIRED COMPONENTS C CXX)
+find_package(pybind11)
 
 set(CUDA_LIBS ${CUDA_LIBRARIES} ${CUDA_CUFFT_LIBRARIES})
 include_directories(${PROJECT_SOURCE_DIR}/include ${PCL_INCLUDE_DIRS} ${OCTOMAP_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS})
@@ -56,6 +57,15 @@ if(CUDA_FOUND)
     target_link_libraries(compare_heatmaps coloradar_cuda)
 else()
     message(STATUS "CUDA not found, skipping CUDA compilation.")
+endif()
+
+if(pybind11_FOUND)
+    message(STATUS "Pybind11 found, compiling Python bindings.")
+    find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
+    pybind11_add_module(coloradar_dataset_tools data_prep/python_bindings.cpp)
+    target_link_libraries(coloradar_dataset_tools PRIVATE coloradar_tools)
+else()
+    message(WARNING "Pybind11 not found, skipping Python bindings compilation.")
 endif()
 
 
