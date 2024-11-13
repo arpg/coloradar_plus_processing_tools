@@ -207,6 +207,16 @@ pcl::PointCloud<pcl::PointXYZI> coloradar::ColoradarPlusRun::readLidarOctomap() 
     return cloud;
 }
 
+void coloradar::ColoradarPlusRun::createLidarOctomap(
+    const double& mapResolution,
+    const float& lidarTotalHorizontalFov,
+    const float& lidarTotalVerticalFov,
+    const float& lidarMaxRange
+) {
+    auto map = buildLidarOctomap(mapResolution, lidarTotalHorizontalFov, lidarTotalVerticalFov, lidarMaxRange, lidarTransform());
+    saveLidarOctomap(map);
+}
+
 void coloradar::ColoradarPlusRun::sampleMapFrames(
     const float& horizontalFov,
     const float& verticalFov,

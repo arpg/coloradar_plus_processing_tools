@@ -68,6 +68,13 @@ public:
     );
     void saveLidarOctomap(const octomap::OcTree& tree);
     pcl::PointCloud<pcl::PointXYZI> readLidarOctomap();
+    void createLidarOctomap(
+        const double& mapResolution,
+        const float& lidarTotalHorizontalFov,
+        const float& lidarTotalVerticalFov,
+        const float& lidarMaxRange,
+        Eigen::Affine3f lidarTransform = Eigen::Affine3f::Identity()
+    );
 
     void sampleMapFrames(
         const float& horizontalFov,
