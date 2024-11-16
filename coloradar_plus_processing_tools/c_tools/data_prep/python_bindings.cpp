@@ -12,9 +12,69 @@
 namespace py = pybind11;
 
 
-PYBIND11_MAKE_OPAQUE(std::vector<Eigen::Affine3f>);
+// PYBIND11_MAKE_OPAQUE(std::vector<Eigen::Affine3f>);
 PYBIND11_MAKE_OPAQUE(pcl::PointCloud<pcl::PointXYZI>);
 PYBIND11_MAKE_OPAQUE(std::vector<coloradar::RadarPoint>);
+
+
+py::array_t<float> poseToNumpy(const Eigen::Affine3f& pose) {
+    py::array_t<float> result({7});
+    auto result_buffer = result.mutable_unchecked<1>();
+    result_buffer(0) = pose.translation().x();
+    result_buffer(1) = pose.translation().y();
+    result_buffer(2) = pose.translation().z();
+    Eigen::Quaternionf quaternion(pose.rotation());
+    result_buffer(3) = quaternion.x();
+    result_buffer(4) = quaternion.y();
+    result_buffer(5) = quaternion.z();
+    result_buffer(6) = quaternion.w();
+    return result;
+}
+
+Eigen::Affine3f numpyToPose(const py::array_t<float>& array) {
+    if (array.ndim() != 1 || array.shape(0) != 7) {
+        throw std::runtime_error("Input array must have shape (7,)");
+    }
+    auto array_data = array.unchecked<1>();
+    Eigen::Vector3f translation(array_data(0), array_data(1), array_data(2));
+    Eigen::Quaternionf rotation(array_data(6), array_data(3), array_data(4), array_data(5));
+    Eigen::Affine3f pose = Eigen::Affine3f::Identity();
+    pose.translate(translation);
+    pose.rotate(rotation);
+    return pose;
+}
+
+py::array_t<float> posesToNumpy(const std::vector<Eigen::Affine3f>& poses) {
+    py::array_t<float>::ShapeContainer shape({static_cast<long int>(poses.size()), 7});
+    py::array_t<float> result(shape);
+    auto result_buffer = result.mutable_unchecked<2>();
+    for (size_t i = 0; i < poses.size(); ++i) {
+        py::array_t<float> single_pose = poseToNumpy(poses[i]);
+        auto single_pose_data = single_pose.unchecked<1>();
+        for (size_t j = 0; j < 7; ++j) {
+            result_buffer(i, j) = single_pose_data(j);
+        }
+    }
+    return result;
+}
+
+std::vector<Eigen::Affine3f> numpyToPoses(const py::array_t<float>& array) {
+    if (array.ndim() != 2 || array.shape(1) != 7) {
+        throw std::runtime_error("Input array must have shape (N, 7)");
+    }
+    std::vector<Eigen::Affine3f> poses;
+    poses.reserve(array.shape(0));
+    auto array_data = array.unchecked<2>();
+    for (ssize_t i = 0; i < array.shape(0); ++i) {
+        Eigen::Vector3f translation(array_data(i, 0), array_data(i, 1), array_data(i, 2));
+        Eigen::Quaternionf rotation(array_data(i, 6), array_data(i, 3), array_data(i, 4), array_data(i, 5));
+        Eigen::Affine3f pose = Eigen::Affine3f::Identity();
+        pose.translate(translation);
+        pose.rotate(rotation);
+        poses.push_back(pose);
+    }
+    return poses;
+}
 
 
 py::array_t<float> radarCloudToNumpy(const pcl::PointCloud<coloradar::RadarPoint>& cloud) {
@@ -46,41 +106,41 @@ py::array_t<float> pointcloudToNumpy(const pcl::PointCloud<pcl::PointXYZI>& clou
     return result;
 }
 
-py::array_t<float> posesToNumpy(const std::vector<Eigen::Affine3f>& poses) {
-    py::array_t<float>::ShapeContainer shape({static_cast<long int>(poses.size()), 7});
-    py::array_t<float> result(shape);
-    auto result_buffer = result.mutable_unchecked<2>();
-    for (size_t i = 0; i < poses.size(); ++i) {
-        const auto& pose = poses[i];
-        result_buffer(i, 0) = pose.translation().x();
-        result_buffer(i, 1) = pose.translation().y();
-        result_buffer(i, 2) = pose.translation().z();
-        Eigen::Quaternionf quaternion(pose.rotation());
-        result_buffer(i, 3) = quaternion.x();
-        result_buffer(i, 4) = quaternion.y();
-        result_buffer(i, 5) = quaternion.z();
-        result_buffer(i, 6) = quaternion.w();
-    }
-    return result;
-}
-
-std::vector<Eigen::Affine3f> numpyToPoses(const py::array_t<float>& array) {
-    if (array.ndim() != 2 || array.shape(1) != 7) {
-        throw std::runtime_error("Input array must have shape (N, 7)");
-    }
-    std::vector<Eigen::Affine3f> poses;
-    poses.reserve(array.shape(0));
-    auto array_data = array.unchecked<2>();
-    for (ssize_t i = 0; i < array.shape(0); ++i) {
-        Eigen::Vector3f translation(array_data(i, 0), array_data(i, 1), array_data(i, 2));
-        Eigen::Quaternionf rotation(array_data(i, 6), array_data(i, 3), array_data(i, 4), array_data(i, 5));
-        Eigen::Affine3f pose = Eigen::Affine3f::Identity();
-        pose.translate(translation);
-        pose.rotate(rotation);
-        poses.push_back(pose);
-    }
-    return poses;
-}
+//py::array_t<float> posesToNumpy(const std::vector<Eigen::Affine3f>& poses) {
+//    py::array_t<float>::ShapeContainer shape({static_cast<long int>(poses.size()), 7});
+//    py::array_t<float> result(shape);
+//    auto result_buffer = result.mutable_unchecked<2>();
+//    for (size_t i = 0; i < poses.size(); ++i) {
+//        const auto& pose = poses[i];
+//        result_buffer(i, 0) = pose.translation().x();
+//        result_buffer(i, 1) = pose.translation().y();
+//        result_buffer(i, 2) = pose.translation().z();
+//        Eigen::Quaternionf quaternion(pose.rotation());
+//        result_buffer(i, 3) = quaternion.x();
+//        result_buffer(i, 4) = quaternion.y();
+//        result_buffer(i, 5) = quaternion.z();
+//        result_buffer(i, 6) = quaternion.w();
+//    }
+//    return result;
+//}
+//
+//std::vector<Eigen::Affine3f> numpyToPoses(const py::array_t<float>& array) {
+//    if (array.ndim() != 2 || array.shape(1) != 7) {
+//        throw std::runtime_error("Input array must have shape (N, 7)");
+//    }
+//    std::vector<Eigen::Affine3f> poses;
+//    poses.reserve(array.shape(0));
+//    auto array_data = array.unchecked<2>();
+//    for (ssize_t i = 0; i < array.shape(0); ++i) {
+//        Eigen::Vector3f translation(array_data(i, 0), array_data(i, 1), array_data(i, 2));
+//        Eigen::Quaternionf rotation(array_data(i, 6), array_data(i, 3), array_data(i, 4), array_data(i, 5));
+//        Eigen::Affine3f pose = Eigen::Affine3f::Identity();
+//        pose.translate(translation);
+//        pose.rotate(rotation);
+//        poses.push_back(pose);
+//    }
+//    return poses;
+//}
 
 template<typename T>
 py::array_t<T> vectorToNumpy(const std::vector<T>& vec) {
@@ -96,11 +156,12 @@ py::array_t<T> vectorToNumpy(const std::vector<T>& vec) {
 
 PYBIND11_MODULE(coloradar_dataset_tools, m) {
     // Helper bindings
-    py::class_<Eigen::Affine3f>(m, "Affine3f")
-        .def(py::init<>())
-        .def("translation", [](const Eigen::Affine3f& self) -> Eigen::Vector3f { return self.translation(); })
-        .def("rotation", [](const Eigen::Affine3f& self) -> Eigen::Quaternionf { return Eigen::Quaternionf(self.rotation()); });
-    py::bind_vector<std::vector<Eigen::Affine3f>>(m, "Affine3fVector");
+//    py::class_<Eigen::Affine3f>(m, "Affine3f")
+//        .def(py::init<>())
+//        .def("translation", [](const Eigen::Affine3f& self) -> Eigen::Vector3f { return self.translation(); })
+//        .def("rotation", [](const Eigen::Affine3f& self) -> Eigen::Quaternionf { return Eigen::Quaternionf(self.rotation()); })
+//        .def("inverse", [](const Eigen::Affine3f& self) -> Eigen::Affine3f { return self.inverse(); });
+//    py::bind_vector<std::vector<Eigen::Affine3f>>(m, "Affine3fVector");
 
     py::class_<pcl::PointXYZI>(m, "PointXYZI")
         .def(py::init<>())
@@ -173,6 +234,9 @@ PYBIND11_MODULE(coloradar_dataset_tools, m) {
         .def("lidar_timestamps", [](coloradar::ColoradarPlusRun& self) { return vectorToNumpy(self.lidarTimestamps()); })
         .def("cascade_cube_timestamps", [](coloradar::ColoradarPlusRun& self) { return vectorToNumpy(self.cascadeCubeTimestamps()); })
         .def("cascade_timestamps", [](coloradar::ColoradarPlusRun& self) { return vectorToNumpy(self.cascadeTimestamps()); })
+
+        .def("get_lidar_pointcloud", py::overload_cast<const std::filesystem::path&>(&coloradar::ColoradarPlusRun::getLidarPointCloud<pcl::PointCloud<pcl::PointXYZI>>))
+        .def("get_lidar_pointcloud", py::overload_cast<const int&>(&coloradar::ColoradarPlusRun::getLidarPointCloud<pcl::PointCloud<pcl::PointXYZI>>))
         .def("get_cascade_datacube", [](coloradar::ColoradarPlusRun& self, const std::filesystem::path& binFilePath) { return vectorToNumpy(self.getCascadeDatacube(binFilePath)); })
         .def("get_cascade_datacube", [](coloradar::ColoradarPlusRun& self, const int& cubeIdx) { return vectorToNumpy(self.getCascadeDatacube(cubeIdx)); })
         .def("get_cascade_heatmap", [](coloradar::ColoradarPlusRun& self, const std::filesystem::path& binFilePath) { return vectorToNumpy(self.getCascadeHeatmap(binFilePath)); })
@@ -184,18 +248,23 @@ PYBIND11_MODULE(coloradar_dataset_tools, m) {
         .def("get_cascade_pointcloud", [](coloradar::ColoradarPlusRun& self, int cloudIdx, float intensityThresholdPercent = 0.0f) {
             pcl::PointCloud<coloradar::RadarPoint> cloud = self.getCascadePointcloud(cloudIdx, intensityThresholdPercent); return radarCloudToNumpy(cloud);
         }, py::arg("cloud_idx"), py::arg("intensity_threshold_percent") = 0)
-        .def("create_lidar_octomap", &coloradar::ColoradarPlusRun::createLidarOctomap, py::arg("map_resolution"), py::arg("lidar_total_horizontal_fov"), py::arg("lidar_total_vertical_fov"), py::arg("lidar_max_range"), py::arg("lidar_transform") = Eigen::Affine3f::Identity())
+
+        .def("create_lidar_octomap", [](coloradar::ColoradarPlusRun& self, const double mapResolution, const float lidarTotalHorizontalFov, const float lidarTotalVerticalFov, const float lidarMaxRange, const py::array_t<float>& lidarTransformArray) {
+            self.createLidarOctomap(mapResolution, lidarTotalHorizontalFov, lidarTotalVerticalFov, lidarMaxRange, numpyToPose(lidarTransformArray));
+        }, py::arg("map_resolution") = 0.5, py::arg("lidar_total_horizontal_fov") = 360, py::arg("lidar_total_vertical_fov") = 180, py::arg("lidar_max_range") = 100, py::arg("lidar_transform") = poseToNumpy(Eigen::Affine3f::Identity()))
+        .def("sample_map_frames", [](coloradar::ColoradarPlusRun& self, const float& totalHorizontalFov, const float& totalVerticalFov, const float& range, const py::array_t<float>& mapPreTransformArray, const py::array_t<float>& posesArray) {
+            self.sampleMapFrames(totalHorizontalFov, totalVerticalFov, range, numpyToPose(mapPreTransformArray), numpyToPoses(posesArray));
+        }, py::arg("total_horizontal_fov") = 360, py::arg("total_vertical_fov") = 180, py::arg("range") = 100, py::arg("map_pretransform") = poseToNumpy(Eigen::Affine3f::Identity()), py::arg("poses") = py::none())
         .def("get_lidar_octomap", [](coloradar::ColoradarPlusRun& self) { auto octree = self.readLidarOctomap(); return pointcloudToNumpy(octree); })
-        .def("sample_map_frames", &coloradar::ColoradarPlusRun::sampleMapFrames)
-        .def("read_map_frame", &coloradar::ColoradarPlusRun::readMapFrame)
+        .def("get_map_frame", [](coloradar::ColoradarPlusRun& self, const int& frameIdx) { return pointcloudToNumpy(self.readMapFrame(frameIdx)); }, py::arg("frame_idx"))
+
         .def("get_poses", [](coloradar::ColoradarPlusRun& self) {
             std::vector<Eigen::Affine3f> poses = self.getPoses<Eigen::Affine3f>(); return posesToNumpy(poses);
         }, "Returns poses as an Nx7 numpy array [x, y, z, qx, qy, qz, qw]")
         .def("interpolate_poses", [](coloradar::ColoradarPlusRun& self, const py::array_t<float>& poses_array, const std::vector<double>& pose_timestamps, const std::vector<double>& target_timestamps) {
             std::vector<Eigen::Affine3f> interpolated_poses = self.interpolatePoses<Eigen::Affine3f>(numpyToPoses(poses_array), pose_timestamps, target_timestamps); return posesToNumpy(interpolated_poses);
-        }, py::arg("poses"), py::arg("pose_timestamps"), py::arg("target_timestamps"), "Interpolates poses and returns an Nx7 numpy array [x, y, z, qx, qy, qz, qw]")
-        .def("get_lidar_pointcloud", py::overload_cast<const std::filesystem::path&>(&coloradar::ColoradarPlusRun::getLidarPointCloud<pcl::PointCloud<pcl::PointXYZI>>))
-        .def("get_lidar_pointcloud", py::overload_cast<const int&>(&coloradar::ColoradarPlusRun::getLidarPointCloud<pcl::PointCloud<pcl::PointXYZI>>));
+        }, py::arg("poses"), py::arg("pose_timestamps"), py::arg("target_timestamps"), "Interpolates poses and returns an Nx7 numpy array [x, y, z, qx, qy, qz, qw]");
+
 
     // ColoradarRun
     py::class_<coloradar::ColoradarRun, coloradar::ColoradarPlusRun>(m, "ColoradarRun")
@@ -220,15 +289,15 @@ PYBIND11_MODULE(coloradar_dataset_tools, m) {
         .def("list_runs", &coloradar::ColoradarPlusDataset::listRuns)
         .def("get_runs", &coloradar::ColoradarPlusDataset::getRuns, py::return_value_policy::reference)
         .def("get_run", &coloradar::ColoradarPlusDataset::getRun, py::return_value_policy::reference)
-        .def("imu_transform", &coloradar::ColoradarPlusDataset::imuTransform)
-        .def("lidar_transform", &coloradar::ColoradarPlusDataset::lidarTransform)
-        .def("cascade_transform", &coloradar::ColoradarPlusDataset::cascadeTransform)
+        .def("imu_transform", [](coloradar::ColoradarPlusDataset& self) { return poseToNumpy(self.imuTransform()); })
+        .def("lidar_transform", [](coloradar::ColoradarPlusDataset& self) { return poseToNumpy(self.lidarTransform()); })
+        .def("cascade_transform", [](coloradar::ColoradarPlusDataset& self) { return poseToNumpy(self.cascadeTransform()); })
         .def("cascade_config", &coloradar::ColoradarPlusDataset::cascadeConfig, py::return_value_policy::reference);
 
     // ColoradarDataset
     py::class_<coloradar::ColoradarDataset, coloradar::ColoradarPlusDataset>(m, "ColoradarDataset")
         .def(py::init<const std::filesystem::path&>())
         .def("get_run", &coloradar::ColoradarDataset::getRun, py::return_value_policy::reference)
-        .def("single_chip_transform", &coloradar::ColoradarDataset::singleChipTransform)
+        .def("single_chip_transform", [](coloradar::ColoradarDataset& self) { return poseToNumpy(self.singleChipTransform()); })
         .def("single_chip_config", &coloradar::ColoradarDataset::singleChipConfig, py::return_value_policy::reference);
 }

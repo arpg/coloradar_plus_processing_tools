@@ -52,7 +52,7 @@ int main(int argc, char** argv) {
 
     for (size_t i = 0; i < targetRuns.size(); ++i) {
         auto run = dataset.getRun(targetRuns[i]);
-        auto poses = run->getPoses<octomath::Pose6D>();
+        auto poses = run->getPoses<Eigen::Affine3f>();
         if (applyTransform == "cascade") {
             poses = run->interpolatePoses(poses, run->poseTimestamps(), run->cascadeTimestamps());
         } else if (applyTransform == "single_chip") {

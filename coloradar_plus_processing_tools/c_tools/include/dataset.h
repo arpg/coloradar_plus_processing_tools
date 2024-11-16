@@ -35,6 +35,41 @@ public:
     const Eigen::Affine3f& lidarTransform() const;
     const Eigen::Affine3f& cascadeTransform() const;
     const RadarConfig* cascadeConfig() const;
+
+//    const std::string export(
+//        const std::vector<ColoradarPlusRun*>& runs,
+//        const std::filesystem::path& destinationDir = "",
+//
+//        const bool& includeCascadeHeatmaps = false,
+//        const bool& includeCascadePointclouds = false,
+//        const int& cascadeAzimuthMaxBin = -1,
+//        const int& cascadeElevationMaxBin = -1,
+//        const int& cascadeRangeMaxBin = -1,
+//        const bool& removeCascadeDopplerDim = false,
+//        const bool& collapseCascadeElevation = false,
+//        const int& collapseCascadeElevationMinBin = -1,
+//        const int& collapseCascadeElevationMaxBin = -1,
+//
+//        const bool& includeLidarMap = false,
+//        const bool& includeMapFrames = false,
+//        const float& mapSampleTotalHorizontalFov = 360,
+//        const float& mapSampleTotalVerticalFov = 180,
+//        const float& mapSampleMaxRange = 100,
+//        const Eigen::Affine3f& mapSamplingPreTransform = Eigen::Affine3f::Identity(),
+//        std::vector<Eigen::Affine3f> mapSamplingPoses = {},
+//        const bool& collapseLidarElevation = false,
+//        const float& collapseLidarElevationMin = -1,
+//        const float& collapseLidarElevationMax = -1,
+//
+//        const bool& includeTruePoses = false,
+//        const bool& includeCascadePoses = false,
+//        const bool& includeLidarPoses = false,
+//        const bool& includeTrueTimestamps = false,
+//        const bool& includeCascadeTimestamps = false,
+//        const bool& includeLidarTimestamps = false,
+//
+//        const bool& includeCascadeConfig = false
+//    ) const;
 };
 
 class ColoradarDataset : public ColoradarPlusDataset {

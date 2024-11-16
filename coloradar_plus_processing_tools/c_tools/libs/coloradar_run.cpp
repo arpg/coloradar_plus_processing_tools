@@ -211,9 +211,10 @@ void coloradar::ColoradarPlusRun::createLidarOctomap(
     const double& mapResolution,
     const float& lidarTotalHorizontalFov,
     const float& lidarTotalVerticalFov,
-    const float& lidarMaxRange
+    const float& lidarMaxRange,
+    Eigen::Affine3f lidarTransform
 ) {
-    auto map = buildLidarOctomap(mapResolution, lidarTotalHorizontalFov, lidarTotalVerticalFov, lidarMaxRange, lidarTransform());
+    auto map = buildLidarOctomap(mapResolution, lidarTotalHorizontalFov, lidarTotalVerticalFov, lidarMaxRange, lidarTransform);
     saveLidarOctomap(map);
 }
 
@@ -222,19 +223,18 @@ void coloradar::ColoradarPlusRun::sampleMapFrames(
     const float& verticalFov,
     const float& range,
     const Eigen::Affine3f& mapPreTransform,
-    std::vector<octomath::Pose6D> poses
+    std::vector<Eigen::Affine3f> poses
 ) {
     float maxRange = range == 0 ? std::numeric_limits<float>::max() : range;
     if (poses.empty())
-        poses = getPoses<octomath::Pose6D>();
+        poses = getPoses<Eigen::Affine3f>();
     pcl::PointCloud<pcl::PointXYZI> origMapCloud = readLidarOctomap();
     pcl::PointCloud<pcl::PointXYZI> mapCloud;
     pcl::transformPointCloud(origMapCloud, mapCloud, mapPreTransform);
 
     for (size_t i = 0; i < poses.size(); ++i) {
-        Eigen::Affine3f pose = coloradar::internal::toEigenPose(poses[i]);
         pcl::PointCloud<pcl::PointXYZI> centeredCloud;
-        pcl::transformPointCloud(mapCloud, centeredCloud, pose);
+        pcl::transformPointCloud(mapCloud, centeredCloud, poses[i]);
         filterFov(centeredCloud, horizontalFov, verticalFov, maxRange);
         std::filesystem::path frameFilePath = lidarMapsDirPath_ / ("frame_" + std::to_string(i) + ".pcd");
         pcl::io::savePCDFile(frameFilePath, centeredCloud);
@@ -247,6 +247,38 @@ pcl::PointCloud<pcl::PointXYZI> coloradar::ColoradarPlusRun::readMapFrame(const 
     coloradar::internal::checkPathExists(frameFilePath);
     pcl::io::loadPCDFile<pcl::PointXYZI>(frameFilePath.string(), cloud);
     return cloud;
+}
+
+const std::string& coloradar::ColoradarPlusRun::exportToFile(
+    const std::filesystem::path& filename,
+    const bool& includeCascadeHeatmaps,
+    const bool& includeCascadePointclouds,
+    const int& cascadeAzimuthMaxBin,
+    const int& cascadeElevationMaxBin,
+    const int& cascadeRangeMaxBin,
+    const bool& removeCascadeDopplerDim,
+    const bool& collapseCascadeElevation,
+    const int& collapseCascadeElevationMinBin,
+    const int& collapseCascadeElevationMaxBin,
+    const bool& includeLidarMap,
+    const bool& includeMapFrames,
+    const float& mapSampleTotalHorizontalFov,
+    const float& mapSampleTotalVerticalFov,
+    const float& mapSampleMaxRange,
+    const Eigen::Affine3f& mapSamplingPreTransform,
+    std::vector<Eigen::Affine3f> mapSamplingPoses,
+    const bool& collapseLidarElevation,
+    const float& collapseLidarElevationMin,
+    const float& collapseLidarElevationMax,
+    const bool& includeTruePoses,
+    const bool& includeCascadePoses,
+    const bool& includeLidarPoses,
+    const bool& includeTrueTimestamps,
+    const bool& includeCascadeTimestamps,
+    const bool& includeLidarTimestamps,
+    const bool& includeCascadeConfig
+) const {
+    return "";
 }
 
 

@@ -1,120 +1,41 @@
-import os
-import subprocess
-
 import matplotlib.cm as cm
 import matplotlib.pyplot as plt
-import numpy as np
 import open3d as o3d
+import numpy as np
+from scipy.spatial.transform import Rotation
 
 
+def inverse_transform(transform):
+    if transform.shape != (7,):
+        raise ValueError("Input must be a 7-element numpy array [x, y, z, qx, qy, qz, qw]")
 
-class RadarParameters:
-    def __init__(self, coloradar_path):
-        self.num_range_bins = None
-        self.num_elevation_bins = None
-        self.num_azimuth_bins = None
-        self.range_bin_width = None
-        self.azimuth_bins = []
-        self.elevation_bins = []
+    translation = transform[:3]
+    quaternion = transform[3:]
+    quaternion /= np.linalg.norm(quaternion)
+    rotation = Rotation.from_quat(quaternion)
 
-        hm_cfg_file_path = self._find_cfg(coloradar_path)
-        if not os.path.isfile(hm_cfg_file_path):
-            raise ValueError(f'Heatmap config {hm_cfg_file_path} not found')
-        self._parse_config_file(hm_cfg_file_path)
-
-        self.test_output_dir = os.path.join(coloradar_path, 'test_output')
-        if not os.path.isdir(self.test_output_dir):
-            os.mkdir(self.test_output_dir)
-
-    def _find_cfg(self, coloradar_path):
-        return os.path.join(coloradar_path, 'calib', 'single_chip', 'heatmap_cfg.txt')
-
-    def _parse_config_file(self, hm_cfg_file_path):
-        with open(hm_cfg_file_path, 'r') as f:
-            for line in f:
-                if line.startswith("num_range_bins"):
-                    self.num_range_bins = int(line.split()[1])
-                elif line.startswith("num_elevation_bins"):
-                    self.num_elevation_bins = int(line.split()[1])
-                elif line.startswith("num_azimuth_bins"):
-                    self.num_azimuth_bins = int(line.split()[1])
-                elif line.startswith("range_bin_width"):
-                    self.range_bin_width = float(line.split()[1])
-                elif line.startswith("azimuth_bins"):
-                    self.azimuth_bins = list(map(float, line.split()[1:]))
-                elif line.startswith("elevation_bins"):
-                    self.elevation_bins = list(map(float, line.split()[1:]))
-        if not self.num_range_bins or not self.range_bin_width:
-            raise ValueError(f'Missing range parameters: num_range_bins, range_bin_width in {hm_cfg_file_path}')
-        self.max_range = np.round(self.range_bin_width * self.num_range_bins, 1)
-
-    def display_azimuth_fov_options(self):
-        self._draw_fov(self.azimuth_bins)
-
-    def display_elevation_fov_options(self):
-        self._draw_fov(self.elevation_bins)
-
-    def _draw_fov(self, bins):
-        fig, ax = plt.subplots(subplot_kw={'projection': 'polar'}, figsize=(35, 21))
-        num_sections = len(bins) // 2
-        if num_sections < 16:
-            color_map = [cm.get_cmap('inferno', num_sections)(i) for i in range(num_sections)]
-        else:
-            plasma_colors = cm.get_cmap('plasma', num_sections // 2)
-            magma_colors = cm.get_cmap('inferno', num_sections // 2)
-            color_map = [
-                color
-                for pair in zip(plasma_colors(range(num_sections // 2)), magma_colors(range(num_sections // 2)))
-                for color in pair
-            ]
-        ax.plot([0, 0], [0, 1], color='red', lw=2)
-
-        for bin_idx, left_bin_start in enumerate(bins[:num_sections]):
-            left_bin_end = bins[bin_idx + 1] if bin_idx < num_sections else 0
-            ax.fill_between([left_bin_start, left_bin_end], 0, 1, color=color_map[bin_idx], alpha=0.9)
-            ax.fill_between([-left_bin_end, -left_bin_start], 0, 1, color=color_map[bin_idx], alpha=0.9)
-            bin_center = (left_bin_start + left_bin_end) / 2
-            bin_number = num_sections - 1 - bin_idx
-            ax.text(bin_center, 0.5, f'{bin_number}', fontsize=9, ha='center', va='center', color='white')
-            ax.text(-bin_center, 0.5, f'{bin_number}', fontsize=9, ha='center', va='center', color='white')
-
-        ax.set_ylim(0, 1)
-        ax.set_theta_zero_location("N")
-        ax.set_theta_direction(-1)
-        ax.set_thetamin(np.degrees(bins[0]))
-        ax.set_thetamax(np.degrees(bins[-1]))
-        ax.grid(False)
-        ax.set_yticklabels([])
-        ax.xaxis.set_ticks([])
-        bin_labels = np.degrees(bins)
-        for bin_value, label in zip(bins, bin_labels):
-            ax.text(bin_value, 1.02, f'{label:.1f}°', fontsize=7, ha='center')
-        plt.show()
-
-    def get_fov_parameters(self, azimuth_fov_idx, elevation_fov_idx, max_range_meters):
-        if not 0 <= azimuth_fov_idx <= self.num_azimuth_bins // 2 - 1:
-            raise ValueError(f'Select azimuth FOV from 0 to {self.num_azimuth_bins // 2 - 1}')
-        if not 0 <= elevation_fov_idx <= self.num_elevation_bins // 2 - 1:
-            raise ValueError(f'Select azimuth FOV from 0 to {self.num_elevation_bins // 2 - 1}')
-        if not 0 < max_range_meters <= self.max_range:
-            raise ValueError(f'Select max range from 0 to {self.max_range}')
-        azimuth_fov_degrees = np.round(np.degrees(-self.azimuth_bins[self.num_azimuth_bins // 2 - 1 - azimuth_fov_idx]), 1)
-        elevation_fov_degrees = np.round(np.degrees(-self.elevation_bins[self.num_elevation_bins // 2 - 1 - elevation_fov_idx]), 1)
-        return {
-            'horizontal_fov': azimuth_fov_degrees * 2,
-            'vertical_fov': elevation_fov_degrees * 2,
-            'max_range': max_range_meters
-        }
-
-class CascadeRadarParameters(RadarParameters):
-    def _find_cfg(self, coloradar_path):
-        return os.path.join(coloradar_path, 'calib', 'cascade', 'heatmap_cfg.txt')
+    inv_transform = np.zeros(7)
+    inv_rotation = rotation.inv()
+    inv_transform[:3] = -inv_rotation.apply(translation)
+    inv_transform[3:] = inv_rotation.as_quat()
+    return inv_transform
 
 
-def show_pcl(pcd_file_path):
-    pcd = o3d.io.read_point_cloud(pcd_file_path)
-    axes = o3d.geometry.TriangleMesh.create_coordinate_frame(size=10.0)
-    o3d.visualization.draw_geometries([pcd, axes])
+def radar_bins_to_fov(radar_config, azimuth_fov_idx, elevation_fov_idx, range_meters):
+    max_range = radar_config.num_range_bins * radar_config.range_bin_width
+    if not 0 <= azimuth_fov_idx <= radar_config.num_azimuth_bins // 2 - 1:
+        raise ValueError(f'Select azimuth FOV from 0 to {radar_config.num_azimuth_bins // 2 - 1}')
+    if not 0 <= elevation_fov_idx <= radar_config.num_elevation_bins // 2 - 1:
+        raise ValueError(f'Select azimuth FOV from 0 to {radar_config.num_elevation_bins // 2 - 1}')
+    if not 0 < range_meters <= max_range:
+        raise ValueError(f'Select max range from 0 to {max_range}')
+    azimuth_fov_degrees = np.round(np.degrees(-radar_config.azimuth_bins[radar_config.num_azimuth_bins // 2 - 1 - azimuth_fov_idx]), 1)
+    elevation_fov_degrees = np.round(np.degrees(-radar_config.elevation_bins[radar_config.num_elevation_bins // 2 - 1 - elevation_fov_idx]), 1)
+    return {
+        'total_horizontal_fov': azimuth_fov_degrees * 2,
+        'total_vertical_fov': elevation_fov_degrees * 2,
+        'range': range_meters
+    }
 
 
 def show_occupancy_pcl(cloud, prob_threshold=0):
@@ -122,9 +43,11 @@ def show_occupancy_pcl(cloud, prob_threshold=0):
     mask = probabilities >= prob_threshold
     filtered_points = cloud[:, :3][mask]
     filtered_probs = probabilities[mask]
+    fp_max, fp_min = filtered_probs.max(), filtered_probs.min()
+    normalized_probs = (filtered_probs - fp_min) / (fp_max - fp_min)
 
     cmap = plt.get_cmap("plasma")
-    colors = cmap(filtered_probs)[:, :3]
+    colors = cmap(normalized_probs)[:, :3]
 
     pcd = o3d.geometry.PointCloud()
     pcd.points = o3d.utility.Vector3dVector(filtered_points)
@@ -132,153 +55,66 @@ def show_occupancy_pcl(cloud, prob_threshold=0):
     axes = o3d.geometry.TriangleMesh.create_coordinate_frame(size=5.0)
     o3d.visualization.draw_geometries([pcd, axes])
 
-
-def show_radar_pcl(points, intensities, intensity_threshold_percent=0.0):
-    min_intensity = np.min(intensities)
-    max_intensity = np.max(intensities)
-    normalized_intensities = (intensities - min_intensity) / (max_intensity - min_intensity)
+def show_radar_pcl(cloud, intensity_threshold_percent=0.0):
+    min_intensity = np.min(cloud[:, 3])
+    max_intensity = np.max(cloud[:, 3])
+    normalized_intensities = (cloud[:, 3] - min_intensity) / (max_intensity - min_intensity)
     filtered_idx = normalized_intensities >= intensity_threshold_percent / 100
     cmap = plt.get_cmap("plasma")
     colors = cmap(normalized_intensities[filtered_idx])[:, :3]
     pcd = o3d.geometry.PointCloud()
-    pcd.points = o3d.utility.Vector3dVector(points[filtered_idx])
+    pcd.points = o3d.utility.Vector3dVector(cloud[:, :3][filtered_idx])
     pcd.colors = o3d.utility.Vector3dVector(colors)
     axes = o3d.geometry.TriangleMesh.create_coordinate_frame(size=5.0)
     o3d.visualization.draw_geometries([pcd, axes], "Radar Point Cloud Visualization")
 
 
-def plot_poses(timestamps, poses, timestamps_interpolated, poses_interpolated):
-    plot_translations(poses[:, :3], poses_interpolated[:, :3], timestamps, timestamps_interpolated, 'Ground Truth vs Device', 'device')
-    plot_rotations(poses[:, 3:], poses_interpolated[:, 3:], timestamps, timestamps_interpolated, 'Ground Truth vs Device', 'device')
+def plot_poses(timestamps, poses, timestamps_interpolated, poses_interpolated, device_name='device'):
+    plot_translations(poses[:, :3], poses_interpolated[:, :3], timestamps, timestamps_interpolated, f'Ground Truth vs {device_name.capitalize()}', device_name.lower())
+    plot_rotations(poses[:, 3:], poses_interpolated[:, 3:], timestamps, timestamps_interpolated, f'Ground Truth vs {device_name.capitalize()}', device_name.lower())
 
 
-class ColoradarDataset:
-    def __init__(self, dataset_path):
-        if not os.path.isdir(dataset_path):
-            raise ValueError(f'Dataset path {dataset_path} does not exist')
-        self.coloradar_path = dataset_path
-        self.runs_path = os.path.join(self.coloradar_path, 'kitti')
-        if not os.path.isdir(self.runs_path):
-            raise ValueError(f'Data path {self.runs_path} does not exist')
-        self.test_output_dir = os.path.join(self.coloradar_path, 'test_output')
-        if not os.path.isdir(self.test_output_dir):
-            os.mkdir(self.test_output_dir)
-        self.build_dir = os.path.join('..', 'build')
+def display_azimuth_fov_options(radar_config):
+    draw_fov(radar_config.azimuth_bins)
 
-    def list_runs(self):
-        return os.listdir(self.runs_path)
+def display_elevation_fov_options(radar_config):
+    draw_fov(radar_config.elevation_bins)
 
-    def interpolate_poses_for_lidar(self, run_name):
-        command = [
-            os.path.join(self.build_dir, 'interpolate_poses_for_lidar'),
-            self.coloradar_path, run_name,
-            f'outputFilePath={os.path.join(self.test_output_dir, run_name + "_lidar_poses_interpolated.txt")}'
+def draw_fov(bins):
+    fig, ax = plt.subplots(subplot_kw={'projection': 'polar'}, figsize=(35, 21))
+    num_sections = len(bins) // 2
+    if num_sections < 16:
+        color_map = [cm.get_cmap('inferno', num_sections)(i) for i in range(num_sections)]
+    else:
+        plasma_colors = cm.get_cmap('plasma', num_sections // 2)
+        magma_colors = cm.get_cmap('inferno', num_sections // 2)
+        color_map = [
+            color
+            for pair in zip(plasma_colors(range(num_sections // 2)), magma_colors(range(num_sections // 2)))
+            for color in pair
         ]
-        _run_command(command)
+    ax.plot([0, 0], [0, 1], color='red', lw=2)
 
-    def interpolate_poses_for_radar(self, run_name):
-        command = [
-            os.path.join(self.build_dir, 'interpolate_poses_for_radar'),
-            self.coloradar_path, run_name,
-            f'outputFilePath={os.path.join(self.test_output_dir, run_name + "_radar_poses_interpolated.txt")}'
-        ]
-        _run_command(command)
-
-    def show_poses(self, run_name):
-        self.interpolate_poses_for_lidar(run_name)
-        self.interpolate_poses_for_radar(run_name)
-
-        gt_timestamps_path = os.path.join(self.runs_path, run_name, 'groundtruth', 'timestamps.txt')
-        lidar_timestamps_path = os.path.join(self.runs_path, run_name, 'lidar', 'timestamps.txt')
-        cascade_timestamps_path = os.path.join(self.runs_path, run_name, 'cascade', 'heatmaps', 'timestamps.txt')
-        gt_poses_path = os.path.join(self.runs_path, run_name, 'groundtruth', 'groundtruth_poses.txt')
-        lidar_poses_path = os.path.join(self.test_output_dir, run_name + "_lidar_poses_interpolated.txt")
-        cascade_poses_path = os.path.join(self.test_output_dir, run_name + "_radar_poses_interpolated.txt")
-        for fp in gt_timestamps_path, lidar_timestamps_path, cascade_timestamps_path, gt_poses_path, lidar_poses_path, cascade_poses_path:
-            if not os.path.isfile(fp):
-                raise ValueError(f'File {fp} does not exist')
-
-        gt_timestamps, lidar_timestamps, cascade_timestamps = np.loadtxt(gt_timestamps_path), np.loadtxt(lidar_timestamps_path), np.loadtxt(cascade_timestamps_path)
-        gt_poses, lidar_poses, cascade_poses = np.loadtxt(gt_poses_path), np.loadtxt(lidar_poses_path), np.loadtxt(cascade_poses_path)
-        gt_translations, gt_rotations = gt_poses[:, :3], gt_poses[:, 3:]
-        lidar_translations, lidar_rotations = lidar_poses[:, :3], lidar_poses[:, 3:]
-        cascade_translations, cascade_rotations = cascade_poses[:, :3], cascade_poses[:, 3:]
-
-        # plot_translations(gt_translations, lidar_translations, gt_timestamps, lidar_timestamps, 'Ground Truth vs Lidar', 'lidar')
-        # plot_rotations(gt_rotations, lidar_rotations, gt_timestamps, lidar_timestamps, 'Ground Truth vs Lidar', 'lidar')
-
-        plot_translations(gt_translations, cascade_translations, gt_timestamps, cascade_timestamps, 'Ground Truth vs Radar', 'radar')
-        plot_rotations(gt_rotations, cascade_rotations, gt_timestamps, cascade_timestamps, 'Ground Truth vs Radar', 'radar')
-
-    def build_octomap(
-            self, run_name, map_resolution=0.1,
-            horizontal_fov=360, vertical_fov=180, max_range=0
-    ):
-        print('Building map for', run_name, '...')
-        command = [
-            os.path.join(self.build_dir, 'build_octomap'),
-            self.coloradar_path, run_name,
-            f'map_resolution={map_resolution}',
-            f'horizontalFov={horizontal_fov}',
-            f'verticalFov={vertical_fov}',
-            f'range={max_range}'
-        ]
-        _run_command(command)
-
-    def show_octomap(self, run_name):
-        show_pcl(os.path.join(self.runs_path, run_name, 'lidar_maps', 'map.pcd'))
-
-    def show_octomap_prob(self, run_name, prob_threshold=0):
-        show_pcl_prob(os.path.join(self.runs_path, run_name, 'lidar_maps', 'map.pcd'), prob_threshold=prob_threshold)
-
-    def sample_map_frames(self, run_name, horizontal_fov=360, vertical_fov=180, max_range=0, device=None):
-        if device not in (None, "cascade", "single_chip"):
-            raise ValueError(f'Device {device} is not supported, supported values:', None, "cascade", "single_chip")
-
-        print('Sampling map frames for', run_name, '...')
-        command = [
-            './build/sample_map_frames', self.coloradar_path, run_name,
-            f'horizontalFov={horizontal_fov}',
-            f'verticalFov={vertical_fov}',
-            f'range={max_range}'
-        ]
-        if device in ("cascade", "single_chip"):
-            command.append(f'applyTransform={device}')
-        _run_command(command)
-
-    def visualize_radar_images(self, run_name):
-        gt_timestamps_path = os.path.join(self.runs_path, run_name, 'groundtruth', 'timestamps.txt')
-        gt_poses_path = os.path.join(self.runs_path, run_name, 'groundtruth', 'groundtruth_poses.txt')
-
-    def filter_cloud(
-            self, pcd_file_path, output_dir=None,
-            random_pcl_radius=10, random_pcl_step=0.5, random_pcl_empty_portion=0.5,
-            horizontal_fov=360, vertical_fov=33.2, max_range=20
-    ):
-        command = [
-            os.path.join(self.build_dir, 'filter_cloud'),
-            f'pcdFilePath={pcd_file_path}',
-            f'randomPclRadius={random_pcl_radius}',
-            f'randomPclStep={random_pcl_step}',
-            f'randomPclEmptyPortion={random_pcl_empty_portion}',
-            f'horizontalFov={horizontal_fov}',
-            f'verticalFov={vertical_fov}',
-            f'range={max_range}'
-        ]
-        if output_dir:
-            command.append(f'outputDir={output_dir}')
-        _run_command(command)
-
-
-def _run_command(command):
-    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, bufsize=1)
-    for line in process.stdout:
-        print(line, end='')
-    for line in process.stderr:
-        print(line, end='')
-    process.stdout.close()
-    process.stderr.close()
-    process.wait()
+    for bin_idx, left_bin_start in enumerate(bins[:num_sections]):
+        left_bin_end = bins[bin_idx + 1] if bin_idx < num_sections else 0
+        ax.fill_between([left_bin_start, left_bin_end], 0, 1, color=color_map[bin_idx], alpha=0.9)
+        ax.fill_between([-left_bin_end, -left_bin_start], 0, 1, color=color_map[bin_idx], alpha=0.9)
+        bin_center = (left_bin_start + left_bin_end) / 2
+        bin_number = num_sections - 1 - bin_idx
+        ax.text(bin_center, 0.5, f'{bin_number}', fontsize=9, ha='center', va='center', color='white')
+        ax.text(-bin_center, 0.5, f'{bin_number}', fontsize=9, ha='center', va='center', color='white')
+    ax.set_ylim(0, 1)
+    ax.set_theta_zero_location("N")
+    ax.set_theta_direction(-1)
+    ax.set_thetamin(np.degrees(bins[0]))
+    ax.set_thetamax(np.degrees(bins[-1]))
+    ax.grid(False)
+    ax.set_yticklabels([])
+    ax.xaxis.set_ticks([])
+    bin_labels = np.degrees(bins)
+    for bin_value, label in zip(bins, bin_labels):
+        ax.text(bin_value, 1.02, f'{label:.1f}°', fontsize=7, ha='center')
+    plt.show()
 
 
 def plot_translations(gt, other, gt_ts, other_ts, title, label):

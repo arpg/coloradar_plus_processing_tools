@@ -77,23 +77,23 @@ target_link_libraries(coloradar_tests coloradar_tools gtest gtest_main pthread)
 
 ### SCRIPTS
 
-add_executable(interpolate_poses_for_lidar data_prep/interpolate_poses_for_lidar.cpp)
-target_link_libraries(interpolate_poses_for_lidar coloradar_tools)
+# add_executable(interpolate_poses_for_lidar data_prep/interpolate_poses_for_lidar.cpp)
+# target_link_libraries(interpolate_poses_for_lidar coloradar_tools)
 
-add_executable(interpolate_poses_for_radar data_prep/interpolate_poses_for_radar.cpp)
-target_link_libraries(interpolate_poses_for_radar coloradar_tools)
+# add_executable(interpolate_poses_for_radar data_prep/interpolate_poses_for_radar.cpp)
+# target_link_libraries(interpolate_poses_for_radar coloradar_tools)
 
-add_executable(filter_cloud data_prep/filter_cloud.cpp)
-target_link_libraries(filter_cloud coloradar_tools)
+# add_executable(filter_cloud data_prep/filter_cloud.cpp)
+# target_link_libraries(filter_cloud coloradar_tools)
 
-add_executable(build_octomap data_prep/build_octomap.cpp)
-target_link_libraries(build_octomap coloradar_tools)
+# add_executable(build_octomap data_prep/build_octomap.cpp)
+# target_link_libraries(build_octomap coloradar_tools)
 
-add_executable(sample_map_frames data_prep/sample_map_frames.cpp)
-target_link_libraries(sample_map_frames coloradar_tools)
+# add_executable(sample_map_frames data_prep/sample_map_frames.cpp)
+# target_link_libraries(sample_map_frames coloradar_tools)
 
-add_executable(create_cascade_pointclouds data_prep/create_cascade_pointclouds.cpp)
-target_link_libraries(create_cascade_pointclouds coloradar_tools)
+# add_executable(create_cascade_pointclouds data_prep/create_cascade_pointclouds.cpp)
+# target_link_libraries(create_cascade_pointclouds coloradar_tools)
 
-add_executable(make_dataset data_prep/make_dataset.cpp)
-target_link_libraries(make_dataset coloradar_tools)
+# add_executable(make_dataset data_prep/make_dataset.cpp)
+# target_link_libraries(make_dataset coloradar_tools)
