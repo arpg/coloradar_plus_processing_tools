@@ -25,6 +25,13 @@ void coloradar::filterFov(CloudT<PointT>& cloud, const float& horizontalFov, con
 struct PointKey {
     float x;
     float y;
+    int precision;
+
+    PointKey(float x, float y, int precision)
+        : x(round(x * std::pow(10, precision)) / std::pow(10, precision)),
+          y(round(y * std::pow(10, precision)) / std::pow(10, precision)),
+          precision(precision) {}
+
     bool operator==(const PointKey& other) const {
         return x == other.x && y == other.y;
     }
@@ -36,45 +43,53 @@ struct PointKeyHash {
     }
 };
 
+    // std::cout << "collapsing cloud elevation, maxIntensityMap.size() " << maxIntensityMap.size() << ", cloud.size() " << cloud.size() << std::endl;
 
 template <coloradar::Pcl4dPointType PointT, template <typename> class CloudT>
-void collapseElevation(CloudT<PointT>& cloud, const float& elevationMin, const float& elevationMax) {
-    if (elevationMin >= elevationMax) {
+void coloradar::collapseElevation(CloudT<PointT>& cloud, const float& elevationMinMeters, const float& elevationMaxMeters) {
+    const int precision = 4;
+    if (elevationMinMeters >= elevationMaxMeters)
         throw std::invalid_argument("Invalid elevation range: elevationMin must be less than elevationMax.");
-    }
-    std::unordered_map<PointKey, PointT, PointKeyHash> max_intensity_map;
-    max_intensity_map.reserve(cloud.size());
-
+    std::unordered_map<PointKey, PointT, PointKeyHash> maxIntensityMap;
+    maxIntensityMap.reserve(cloud.size());
     for (const auto& point : cloud) {
-        if (point.z >= elevationMin && point.z <= elevationMax) {
-            PointKey key{point.x, point.y};
-            auto iter = max_intensity_map.find(key);
-            if (iter == max_intensity_map.end() || point.intensity > iter->second.intensity) {
-                max_intensity_map[key] = point;
+        // std::cout << "collapsing cloud elevation, checking key " << point.x << " " << point.y << std::endl;
+        if (point.z >= elevationMinMeters && point.z <= elevationMaxMeters) {
+            PointKey key(point.x, point.y, precision);
+            auto iter = maxIntensityMap.find(key);
+            if (iter == maxIntensityMap.end() || point.intensity > iter->second.intensity) {
+                // std::cout << "adding key " << key.x << " " << key.y << std::endl;
+                maxIntensityMap[key] = point;
             }
         }
+        // break;
     }
     cloud.clear();
-    cloud.reserve(max_intensity_map.size());
-    for (const auto& [key, point] : max_intensity_map) {
-        cloud.push_back(point);
+    cloud.reserve(maxIntensityMap.size());
+    for (const auto& [key, point] : maxIntensityMap) {
+        PointT collapsedPoint = point;
+        collapsedPoint.z = 0.0f;
+        cloud.push_back(collapsedPoint);
     }
 }
 
 template <coloradar::PclPointType PointT, template <typename> class CloudT>
-void collapseElevation(CloudT<PointT>& cloud) {
-    std::unordered_map<PointKey, PointT, PointKeyHash> unique_points_map;
-    unique_points_map.reserve(cloud.size());
+void coloradar::collapseElevation(CloudT<PointT>& cloud) {
+    const int precision = 4;
+    std::unordered_map<PointKey, PointT, PointKeyHash> uniquePointsMap;
+    uniquePointsMap.reserve(cloud.size());
     for (const auto& point : cloud) {
-        PointKey key{point.x, point.y};
-        if (unique_points_map.find(key) == unique_points_map.end()) {
-            unique_points_map[key] = point;
+        PointKey key(point.x, point.y, precision);
+        if (uniquePointsMap.find(key) == uniquePointsMap.end()) {
+            uniquePointsMap[key] = point;
         }
     }
     cloud.clear();
-    cloud.reserve(unique_points_map.size());
-    for (const auto& [key, point] : unique_points_map) {
-        cloud.push_back(point);
+    cloud.reserve(uniquePointsMap.size());
+    for (const auto& [key, point] : uniquePointsMap) {
+        PointT collapsedPoint = point;
+        collapsedPoint.z = 0.0f;
+        cloud.push_back(collapsedPoint);
     }
 }
 

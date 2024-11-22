@@ -3,6 +3,8 @@
 
 #include "utils.h"
 
+#include <H5Cpp.h>
+
 
 namespace coloradar {
 
@@ -31,6 +33,12 @@ protected:
     std::vector<float> getHeatmap(const std::filesystem::path& binFilePath, RadarConfig* config);
     void createRadarPointclouds(RadarConfig* config, const std::filesystem::path& heatmapDirPath, const std::filesystem::path& pointcloudDirPath, const float& intensityThresholdPercent = 0.0);
     pcl::PointCloud<RadarPoint> getRadarPointcloud(const std::filesystem::path& binFilePath, RadarConfig* config, const float& intensityThresholdPercent = 0.0);
+
+    void saveVectorToHDF5(const std::string& name, H5::H5File& file, const std::vector<double>& vec);
+    void savePosesToHDF5(const std::string& name, H5::H5File& file, const std::vector<Eigen::Affine3f>& poses);
+    void saveHeatmapToHDF5(const int& idx, H5::H5File& file, const std::vector<float>& heatmap, const int& numAzimuthBins, const int& numElevationBins, const int& numRangeBins, const int& numDims);
+    void saveRadarCloudToHDF5(const int& idx, H5::H5File& file, const pcl::PointCloud<coloradar::RadarPoint>& cloud, bool collapseElevation = false);
+    void saveLidarCloudToHDF5(const std::string& name, H5::H5File& file, const pcl::PointCloud<pcl::PointXYZI>& cloud, bool includeIntensity = false, bool collapseElevation = false);
 
 public:
     const std::string name;
@@ -85,8 +93,8 @@ public:
     );
     pcl::PointCloud<pcl::PointXYZI> readMapFrame(const int& frameIdx);
 
-    const std::string& exportToFile(
-        const std::filesystem::path& filename = "",
+    std::filesystem::path exportToFile(
+        std::filesystem::path destination = "",
 
         const bool& includeCascadeHeatmaps = false,
         const bool& includeCascadePointclouds = false,
@@ -95,29 +103,42 @@ public:
         const int& cascadeRangeMaxBin = -1,
         const bool& removeCascadeDopplerDim = false,
         const bool& collapseCascadeElevation = false,
-        const int& collapseCascadeElevationMinBin = -1,
-        const int& collapseCascadeElevationMaxBin = -1,
+        const int& collapseCascadeElevationMinZ = -100,
+        const int& collapseCascadeElevationMaxZ = 100,
+        const float& cascadeCloudIntensityThresholdPercent = 0,
+
+        const bool& includeLidarFrames = false,
+        const float& lidarFrameTotalHorizontalFov = 360,
+        const float& lidarFrameTotalVerticalFov = 180,
+        const float& lidarFrameMaxRange = 100,
+        const bool& collapseLidarFrameElevation = false,
+        const float& collapseLidarFrameElevationMinZ = -100,
+        const float& collapseLidarFrameElevationMaxZ = 100,
 
         const bool& includeLidarMap = false,
+        const bool& collapseMapElevation = false,
+        const float& collapseMapElevationMinZ = -100,
+        const float& collapseMapElevationMaxZ = 100,
+
         const bool& includeMapFrames = false,
         const float& mapSampleTotalHorizontalFov = 360,
         const float& mapSampleTotalVerticalFov = 180,
         const float& mapSampleMaxRange = 100,
         const Eigen::Affine3f& mapSamplingPreTransform = Eigen::Affine3f::Identity(),
         std::vector<Eigen::Affine3f> mapSamplingPoses = {},
-        const bool& collapseLidarElevation = false,
-        const float& collapseLidarElevationMin = -1,
-        const float& collapseLidarElevationMax = -1,
+        const bool& collapseMapSampleElevation = false,
+        const float& collapseMapSampleElevationMinZ = -100,
+        const float& collapseMapSampleElevationMaxZ = 100,
 
-        const bool& includeTruePoses = false,
-        const bool& includeCascadePoses = false,
-        const bool& includeLidarPoses = false,
-        const bool& includeTrueTimestamps = false,
-        const bool& includeCascadeTimestamps = false,
-        const bool& includeLidarTimestamps = false,
+        const bool& removeLidarIntensity = false,
 
-        const bool& includeCascadeConfig = false
-    ) const;
+        const bool& includeTruePoses = true,
+        const bool& includeCascadePoses = true,
+        const bool& includeLidarPoses = true,
+        const bool& includeTrueTimestamps = true,
+        const bool& includeCascadeTimestamps = true,
+        const bool& includeLidarTimestamps = true
+    );
 
     virtual ~ColoradarPlusRun() = default;
 };

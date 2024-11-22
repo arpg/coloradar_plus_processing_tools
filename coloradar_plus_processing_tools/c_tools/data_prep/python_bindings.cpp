@@ -12,9 +12,30 @@
 namespace py = pybind11;
 
 
-// PYBIND11_MAKE_OPAQUE(std::vector<Eigen::Affine3f>);
 PYBIND11_MAKE_OPAQUE(pcl::PointCloud<pcl::PointXYZI>);
 PYBIND11_MAKE_OPAQUE(std::vector<coloradar::RadarPoint>);
+
+
+bool isNumpyArrayEmpty(const py::array_t<float>& array) {
+    if (array.is_none()) {
+        return true;
+    }
+    if (array.ndim() != 2) {
+        return true;
+    }
+    auto buffer = array.unchecked<2>();
+    if (buffer.shape(0) == 0 || buffer.shape(1) == 0) {
+        return true;
+    }
+    for (ssize_t i = 0; i < buffer.shape(0); ++i) {
+        for (ssize_t j = 0; j < buffer.shape(1); ++j) {
+            if (std::isnan(buffer(i, j))) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
 
 
 py::array_t<float> poseToNumpy(const Eigen::Affine3f& pose) {
@@ -106,42 +127,6 @@ py::array_t<float> pointcloudToNumpy(const pcl::PointCloud<pcl::PointXYZI>& clou
     return result;
 }
 
-//py::array_t<float> posesToNumpy(const std::vector<Eigen::Affine3f>& poses) {
-//    py::array_t<float>::ShapeContainer shape({static_cast<long int>(poses.size()), 7});
-//    py::array_t<float> result(shape);
-//    auto result_buffer = result.mutable_unchecked<2>();
-//    for (size_t i = 0; i < poses.size(); ++i) {
-//        const auto& pose = poses[i];
-//        result_buffer(i, 0) = pose.translation().x();
-//        result_buffer(i, 1) = pose.translation().y();
-//        result_buffer(i, 2) = pose.translation().z();
-//        Eigen::Quaternionf quaternion(pose.rotation());
-//        result_buffer(i, 3) = quaternion.x();
-//        result_buffer(i, 4) = quaternion.y();
-//        result_buffer(i, 5) = quaternion.z();
-//        result_buffer(i, 6) = quaternion.w();
-//    }
-//    return result;
-//}
-//
-//std::vector<Eigen::Affine3f> numpyToPoses(const py::array_t<float>& array) {
-//    if (array.ndim() != 2 || array.shape(1) != 7) {
-//        throw std::runtime_error("Input array must have shape (N, 7)");
-//    }
-//    std::vector<Eigen::Affine3f> poses;
-//    poses.reserve(array.shape(0));
-//    auto array_data = array.unchecked<2>();
-//    for (ssize_t i = 0; i < array.shape(0); ++i) {
-//        Eigen::Vector3f translation(array_data(i, 0), array_data(i, 1), array_data(i, 2));
-//        Eigen::Quaternionf rotation(array_data(i, 6), array_data(i, 3), array_data(i, 4), array_data(i, 5));
-//        Eigen::Affine3f pose = Eigen::Affine3f::Identity();
-//        pose.translate(translation);
-//        pose.rotate(rotation);
-//        poses.push_back(pose);
-//    }
-//    return poses;
-//}
-
 template<typename T>
 py::array_t<T> vectorToNumpy(const std::vector<T>& vec) {
     typename py::array_t<T>::ShapeContainer shape({static_cast<long int>(vec.size())});
@@ -155,14 +140,6 @@ py::array_t<T> vectorToNumpy(const std::vector<T>& vec) {
 
 
 PYBIND11_MODULE(coloradar_dataset_tools, m) {
-    // Helper bindings
-//    py::class_<Eigen::Affine3f>(m, "Affine3f")
-//        .def(py::init<>())
-//        .def("translation", [](const Eigen::Affine3f& self) -> Eigen::Vector3f { return self.translation(); })
-//        .def("rotation", [](const Eigen::Affine3f& self) -> Eigen::Quaternionf { return Eigen::Quaternionf(self.rotation()); })
-//        .def("inverse", [](const Eigen::Affine3f& self) -> Eigen::Affine3f { return self.inverse(); });
-//    py::bind_vector<std::vector<Eigen::Affine3f>>(m, "Affine3fVector");
-
     py::class_<pcl::PointXYZI>(m, "PointXYZI")
         .def(py::init<>())
         .def_readwrite("x", &pcl::PointXYZI::x)
@@ -263,8 +240,40 @@ PYBIND11_MODULE(coloradar_dataset_tools, m) {
         }, "Returns poses as an Nx7 numpy array [x, y, z, qx, qy, qz, qw]")
         .def("interpolate_poses", [](coloradar::ColoradarPlusRun& self, const py::array_t<float>& poses_array, const std::vector<double>& pose_timestamps, const std::vector<double>& target_timestamps) {
             std::vector<Eigen::Affine3f> interpolated_poses = self.interpolatePoses<Eigen::Affine3f>(numpyToPoses(poses_array), pose_timestamps, target_timestamps); return posesToNumpy(interpolated_poses);
-        }, py::arg("poses"), py::arg("pose_timestamps"), py::arg("target_timestamps"), "Interpolates poses and returns an Nx7 numpy array [x, y, z, qx, qy, qz, qw]");
-
+        }, py::arg("poses"), py::arg("pose_timestamps"), py::arg("target_timestamps"), "Interpolates poses and returns an Nx7 numpy array [x, y, z, qx, qy, qz, qw]")
+        .def("export_to_file", [](
+            coloradar::ColoradarPlusRun& self, const std::string& destination = "",
+            const bool& includeCascadeHeatmaps = false, const bool& includeCascadePointclouds = false, const int& cascadeAzimuthMaxBin = -1, const int& cascadeElevationMaxBin = -1, const int& cascadeRangeMaxBin = -1,
+            const bool& removeCascadeDopplerDim = false, const bool& collapseCascadeElevation = false, const int& collapseCascadeElevationMinZ = -100, const int& collapseCascadeElevationMaxZ = 100, const float& cascadeCloudIntensityThresholdPercent = 0.0f,
+            const bool& includeLidarFrames = false, const float& lidarFrameTotalHorizontalFov = 360.0f, const float& lidarFrameTotalVerticalFov = 180.0f, const float& lidarFrameMaxRange = 100.0f,
+            const bool& collapseLidarFrameElevation = false, const float& collapseLidarFrameElevationMinZ = -100.0f, const float& collapseLidarFrameElevationMaxZ = 100.0f,
+            const bool& includeLidarMap = false, const bool& collapseMapElevation = false, const float& collapseMapElevationMinZ = -100.0f, const float& collapseMapElevationMaxZ = 100.0f,
+            const bool& includeMapFrames = false, const float& mapSampleTotalHorizontalFov = 360.0f, const float& mapSampleTotalVerticalFov = 180.0f, const float& mapSampleMaxRange = 100.0f,
+            const py::array_t<float>& mapSamplingPreTransformArray = poseToNumpy(Eigen::Affine3f::Identity()), const py::array_t<float>& mapSamplingPosesArray = py::none(),
+            const bool& collapseMapSampleElevation = false, const float& collapseMapSampleElevationMinZ = -100.0f, const float& collapseMapSampleElevationMaxZ = 100.0f,
+            const bool& removeLidarIntensity = false,
+            const bool& includeTruePoses = true, const bool& includeCascadePoses = true, const bool& includeLidarPoses = true,
+            const bool& includeTrueTimestamps = true, const bool& includeCascadeTimestamps = true, const bool& includeLidarTimestamps = true) {
+                auto mapSamplingPreTransform = numpyToPose(mapSamplingPreTransformArray);
+                auto mapSamplingPoses = isNumpyArrayEmpty(mapSamplingPosesArray) ? std::vector<Eigen::Affine3f>{} : numpyToPoses(mapSamplingPosesArray);
+                return self.exportToFile(
+                    destination, includeCascadeHeatmaps, includeCascadePointclouds, cascadeAzimuthMaxBin, cascadeElevationMaxBin, cascadeRangeMaxBin, removeCascadeDopplerDim, collapseCascadeElevation, collapseCascadeElevationMinZ, collapseCascadeElevationMaxZ, cascadeCloudIntensityThresholdPercent,
+                    includeLidarFrames, lidarFrameTotalHorizontalFov, lidarFrameTotalVerticalFov, lidarFrameMaxRange, collapseLidarFrameElevation, collapseLidarFrameElevationMinZ, collapseLidarFrameElevationMaxZ,
+                    includeLidarMap, collapseMapElevation, collapseMapElevationMinZ, collapseMapElevationMaxZ, includeMapFrames, mapSampleTotalHorizontalFov, mapSampleTotalVerticalFov, mapSampleMaxRange, mapSamplingPreTransform, mapSamplingPoses, collapseMapSampleElevation, collapseMapSampleElevationMinZ, collapseMapSampleElevationMaxZ,
+                    includeTruePoses, includeCascadePoses, includeLidarPoses, includeTrueTimestamps, includeCascadeTimestamps, includeLidarTimestamps
+                );
+            }, py::arg("destination") = "", py::arg("include_cascade_heatmaps") = false, py::arg("include_cascade_pointclouds") = false, py::arg("cascade_azimuth_max_bin") = -1, py::arg("cascade_elevation_max_bin") = -1, py::arg("cascade_range_max_bin") = -1,
+            py::arg("remove_cascade_doppler_dim") = false, py::arg("collapse_cascade_elevation") = false, py::arg("collapse_cascade_elevation_min_z") = -100, py::arg("collapse_cascade_elevation_max_z") = 100, py::arg("cascade_cloud_intensity_threshold_percent") = 0.0f,
+            py::arg("include_lidar_frames") = false, py::arg("lidar_frame_total_horizontal_fov") = 360.0f, py::arg("lidar_frame_total_vertical_fov") = 180.0f, py::arg("lidar_frame_max_range") = 100.0f,
+            py::arg("collapse_lidar_frame_elevation") = false, py::arg("collapse_lidar_frame_elevation_min_z") = -100.0f, py::arg("collapse_lidar_frame_elevation_max_z") = 100.0f,
+            py::arg("include_lidar_map") = false, py::arg("collapse_map_elevation") = false, py::arg("collapse_map_elevation_min_z") = -100.0f, py::arg("collapse_map_elevation_max_z") = 100.0f,
+            py::arg("include_map_frames") = false, py::arg("map_sample_total_horizontal_fov") = 360.0f, py::arg("map_sample_total_vertical_fov") = 180.0f, py::arg("map_sample_max_range") = 100.0f,
+            py::arg("map_sampling_pre_transform") = poseToNumpy(Eigen::Affine3f::Identity()), py::arg("map_sampling_poses") = py::none(),
+            py::arg("collapse_map_sample_elevation") = false, py::arg("collapse_map_sample_elevation_min_z") = -100.0f, py::arg("collapse_map_sample_elevation_max_z") = 100.0f,
+            py::arg("remove_lidar_intensity") = false,
+            py::arg("include_true_poses") = true, py::arg("include_cascade_poses") = true, py::arg("include_lidar_poses") = true,
+            py::arg("include_true_timestamps") = true, py::arg("include_cascade_timestamps") = true, py::arg("include_lidar_timestamps") = true
+        );
 
     // ColoradarRun
     py::class_<coloradar::ColoradarRun, coloradar::ColoradarPlusRun>(m, "ColoradarRun")

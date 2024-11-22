@@ -5,7 +5,7 @@
 
 void coloradar::internal::checkPathExists(const std::filesystem::path& path) {
     if (!std::filesystem::exists(path)) {
-        throw std::runtime_error("Directory or file not found: " + path.string());
+         throw std::filesystem::filesystem_error("Failed to open file", path, std::make_error_code(std::errc::no_such_file_or_directory));
     }
 }
 void coloradar::internal::createDirectoryIfNotExists(const std::filesystem::path& dirPath) {
