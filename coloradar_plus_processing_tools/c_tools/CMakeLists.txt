@@ -77,6 +77,9 @@ target_link_libraries(coloradar_tests coloradar_tools gtest gtest_main pthread)
 
 ### SCRIPTS
 
+add_executable(test data_prep/test.cpp)
+target_link_libraries(test coloradar_tools)
+
 # add_executable(interpolate_poses_for_lidar data_prep/interpolate_poses_for_lidar.cpp)
 # target_link_libraries(interpolate_poses_for_lidar coloradar_tools)
 

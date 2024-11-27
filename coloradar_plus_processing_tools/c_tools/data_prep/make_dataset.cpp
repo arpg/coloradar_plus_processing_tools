@@ -125,7 +125,7 @@ int main(int argc, char** argv) {
 
     H5::H5File file(coloradarDirPath / "dataset.h5", H5F_ACC_TRUNC);
     auto config = dataset.cascadeConfig();
-    saveJsonToHDF5("radar_config", config->toJson(), file);
+    // saveJsonToHDF5("radar_config", config->toJson(), file);
 
     for (const auto& runName : targetRuns) {
         auto run = dataset.getRun(runName);

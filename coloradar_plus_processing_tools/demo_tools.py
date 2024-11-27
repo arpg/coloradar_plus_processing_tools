@@ -21,16 +21,19 @@ def inverse_transform(transform):
     return inv_transform
 
 
-def radar_bins_to_fov(radar_config, azimuth_fov_idx, elevation_fov_idx, range_meters):
-    max_range = radar_config.num_range_bins * radar_config.range_bin_width
+def radar_bins_to_fov(radar_config, azimuth_fov_idx, elevation_fov_idx, range_bin_idx):
+    # max_range = radar_config.num_range_bins * radar_config.range_bin_width
     if not 0 <= azimuth_fov_idx <= radar_config.num_azimuth_bins // 2 - 1:
         raise ValueError(f'Select azimuth FOV from 0 to {radar_config.num_azimuth_bins // 2 - 1}')
     if not 0 <= elevation_fov_idx <= radar_config.num_elevation_bins // 2 - 1:
         raise ValueError(f'Select azimuth FOV from 0 to {radar_config.num_elevation_bins // 2 - 1}')
-    if not 0 < range_meters <= max_range:
-        raise ValueError(f'Select max range from 0 to {max_range}')
+    # if not 0 < range_meters <= max_range:
+    #     raise ValueError(f'Select max range from 0 to {max_range}')
+    if not 0 <= range_bin_idx < radar_config.num_range_bins:
+        raise ValueError(f'Select range bin from 0 to {radar_config.num_range_bins}')
     azimuth_fov_degrees = np.round(np.degrees(-radar_config.azimuth_bins[radar_config.num_azimuth_bins // 2 - 1 - azimuth_fov_idx]), 1)
     elevation_fov_degrees = np.round(np.degrees(-radar_config.elevation_bins[radar_config.num_elevation_bins // 2 - 1 - elevation_fov_idx]), 1)
+    range_meters = np.round(radar_config.range_bin_width * (range_bin_idx + 1), 2)
     return {
         'total_horizontal_fov': azimuth_fov_degrees * 2,
         'total_vertical_fov': elevation_fov_degrees * 2,
@@ -65,7 +68,7 @@ def show_radar_pcl(cloud, intensity_threshold_percent=0.0):
     pcd = o3d.geometry.PointCloud()
     pcd.points = o3d.utility.Vector3dVector(cloud[:, :3][filtered_idx])
     pcd.colors = o3d.utility.Vector3dVector(colors)
-    axes = o3d.geometry.TriangleMesh.create_coordinate_frame(size=5.0)
+    axes = o3d.geometry.TriangleMesh.create_coordinate_frame(size=3.0)
     o3d.visualization.draw_geometries([pcd, axes], "Radar Point Cloud Visualization")
 
 

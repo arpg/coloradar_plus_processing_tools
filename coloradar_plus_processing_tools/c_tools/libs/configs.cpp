@@ -1,10 +1,5 @@
 #include "configs.h"
 
-#include <json/json.h>
-#include <map>
-#include <sstream>
-#include <regex>
-
 
 std::map<std::string, std::vector<std::string>> readConfig(const std::filesystem::path& configFile) {
     coloradar::internal::checkPathExists(configFile);
@@ -431,7 +426,7 @@ void coloradar::CascadeConfig::init(const std::filesystem::path& calibDir) {
 }
 
 
-std::string coloradar::RadarConfig::toJson() const {
+Json::Value coloradar::RadarConfig::toJson() const {
     Json::Value jsonConfig;
 
     // Heatmap parameters
@@ -517,7 +512,7 @@ std::string coloradar::RadarConfig::toJson() const {
     for (const auto& angle : elevationAngles) jsonConfig["internal"]["elevationAngles"].append(angle);
     jsonConfig["internal"]["dopplerBinWidth"] = dopplerBinWidth;
 
-    Json::StreamWriterBuilder writer;
-    std::string jsonString = Json::writeString(writer, jsonConfig);
-    return jsonString;
+    // Json::StreamWriterBuilder writer;
+    // std::string jsonString = Json::writeString(writer, jsonConfig);
+    return jsonConfig;
 }

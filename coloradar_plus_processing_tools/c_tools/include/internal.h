@@ -6,7 +6,11 @@
 #include <filesystem>
 #include <string>
 #include <vector>
+#include <map>
+#include <sstream>
+#include <regex>
 #include <Eigen/Dense>
+#include <json/json.h>
 
 
 namespace coloradar::internal {

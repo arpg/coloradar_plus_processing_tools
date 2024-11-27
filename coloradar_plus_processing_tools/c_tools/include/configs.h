@@ -68,7 +68,7 @@ public:
     double dopplerBinWidth;
 
     RadarConfig(const int& nAzimuthBeams = 1, const int& nElevationBeams = 1);
-    std::string toJson() const;
+    Json::Value toJson() const;
 };
 
 class SingleChipConfig : public RadarConfig {
