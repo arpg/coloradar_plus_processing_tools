@@ -72,7 +72,7 @@ public:
         const float& lidarTotalHorizontalFov,
         const float& lidarTotalVerticalFov,
         const float& lidarMaxRange,
-        Eigen::Affine3f lidarTransform = Eigen::Affine3f::Identity()
+        Eigen::Affine3f lidarToBaseTransform = Eigen::Affine3f::Identity()
     );
     void saveLidarOctomap(const octomap::OcTree& tree);
     pcl::PointCloud<pcl::PointXYZI> readLidarOctomap();
@@ -81,64 +81,64 @@ public:
         const float& lidarTotalHorizontalFov,
         const float& lidarTotalVerticalFov,
         const float& lidarMaxRange,
-        Eigen::Affine3f lidarTransform = Eigen::Affine3f::Identity()
+        Eigen::Affine3f lidarToBaseTransform = Eigen::Affine3f::Identity()
     );
 
     void sampleMapFrames(
         const float& horizontalFov,
         const float& verticalFov,
         const float& range,
-        const Eigen::Affine3f& mapPreTransform = Eigen::Affine3f::Identity(),
-        std::vector<Eigen::Affine3f> poses = {}
+        const Eigen::Affine3f& sensorToBaseTransform = Eigen::Affine3f::Identity(),
+        std::vector<Eigen::Affine3f> basePoses = {}
     );
     pcl::PointCloud<pcl::PointXYZI> readMapFrame(const int& frameIdx);
 
-    std::filesystem::path exportToFile(
-        std::filesystem::path destination = "",
-
-        const bool& includeCascadeHeatmaps = false,
-        const bool& includeCascadePointclouds = false,
-        const int& cascadeAzimuthMaxBin = -1,
-        const int& cascadeElevationMaxBin = -1,
-        const int& cascadeRangeMaxBin = -1,
-        const bool& removeCascadeDopplerDim = false,
-        const bool& collapseCascadeElevation = false,
-        const int& collapseCascadeElevationMinZ = -100,
-        const int& collapseCascadeElevationMaxZ = 100,
-        const float& cascadeCloudIntensityThresholdPercent = 0,
-
-        const bool& includeLidarFrames = false,
-        const float& lidarFrameTotalHorizontalFov = 360,
-        const float& lidarFrameTotalVerticalFov = 180,
-        const float& lidarFrameMaxRange = 100,
-        const bool& collapseLidarFrameElevation = false,
-        const float& collapseLidarFrameElevationMinZ = -100,
-        const float& collapseLidarFrameElevationMaxZ = 100,
-
-        const bool& includeLidarMap = false,
-        const bool& collapseMapElevation = false,
-        const float& collapseMapElevationMinZ = -100,
-        const float& collapseMapElevationMaxZ = 100,
-
-        const bool& includeMapFrames = false,
-        const float& mapSampleTotalHorizontalFov = 360,
-        const float& mapSampleTotalVerticalFov = 180,
-        const float& mapSampleMaxRange = 100,
-        const Eigen::Affine3f& mapSamplingPreTransform = Eigen::Affine3f::Identity(),
-        std::vector<Eigen::Affine3f> mapSamplingPoses = {},
-        const bool& collapseMapSampleElevation = false,
-        const float& collapseMapSampleElevationMinZ = -100,
-        const float& collapseMapSampleElevationMaxZ = 100,
-
-        const bool& removeLidarIntensity = false,
-
-        const bool& includeTruePoses = true,
-        const bool& includeCascadePoses = true,
-        const bool& includeLidarPoses = true,
-        const bool& includeTrueTimestamps = true,
-        const bool& includeCascadeTimestamps = true,
-        const bool& includeLidarTimestamps = true
-    );
+//    std::filesystem::path exportToFile(
+//        std::filesystem::path destination = "",
+//
+//        const bool& includeCascadeHeatmaps = false,
+//        const bool& includeCascadePointclouds = false,
+//        const int& cascadeAzimuthMaxBin = -1,
+//        const int& cascadeElevationMaxBin = -1,
+//        const int& cascadeRangeMaxBin = -1,
+//        const bool& removeCascadeDopplerDim = false,
+//        const bool& collapseCascadeElevation = false,
+//        const int& collapseCascadeElevationMinZ = -100,
+//        const int& collapseCascadeElevationMaxZ = 100,
+//        const float& cascadeCloudIntensityThresholdPercent = 0,
+//
+//        const bool& includeLidarFrames = false,
+//        const float& lidarFrameTotalHorizontalFov = 360,
+//        const float& lidarFrameTotalVerticalFov = 180,
+//        const float& lidarFrameMaxRange = 100,
+//        const bool& collapseLidarFrameElevation = false,
+//        const float& collapseLidarFrameElevationMinZ = -100,
+//        const float& collapseLidarFrameElevationMaxZ = 100,
+//
+//        const bool& includeLidarMap = false,
+//        const bool& collapseMapElevation = false,
+//        const float& collapseMapElevationMinZ = -100,
+//        const float& collapseMapElevationMaxZ = 100,
+//
+//        const bool& includeMapFrames = false,
+//        const float& mapSampleTotalHorizontalFov = 360,
+//        const float& mapSampleTotalVerticalFov = 180,
+//        const float& mapSampleMaxRange = 100,
+//        const Eigen::Affine3f& mapSamplingPreTransform = Eigen::Affine3f::Identity(),
+//        std::vector<Eigen::Affine3f> mapSamplingPoses = {},
+//        const bool& collapseMapSampleElevation = false,
+//        const float& collapseMapSampleElevationMinZ = -100,
+//        const float& collapseMapSampleElevationMaxZ = 100,
+//
+//        const bool& removeLidarIntensity = false,
+//
+//        const bool& includeTruePoses = true,
+//        const bool& includeCascadePoses = true,
+//        const bool& includeLidarPoses = true,
+//        const bool& includeTrueTimestamps = true,
+//        const bool& includeCascadeTimestamps = true,
+//        const bool& includeLidarTimestamps = true
+//    );
 
     virtual ~ColoradarPlusRun() = default;
 };

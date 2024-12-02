@@ -26,6 +26,7 @@ int main() {
     bool collapseMapElevation = false;
     float collapseMapElevationMinZ = -1.0f;
     float collapseMapElevationMaxZ = 1.0f;
+    Eigen::Affine3f lidarMapTransform = Eigen::Affine3f::Identity();
     bool includeMapFrames = true;
     float mapSampleTotalHorizontalFov = 360.0f;
     float mapSampleTotalVerticalFov = 180.0f;
@@ -46,11 +47,11 @@ int main() {
     try {
         std::filesystem::path resultPath = dataset.exportToFile(
             runs, "test_dataset.h5",
-            includeCascadeHeatmaps, includeCascadePointclouds,
+            includeCascadeHeatmaps, includeCascadePointclouds, true,
             cascadeAzimuthMaxBin, cascadeElevationMaxBin, cascadeRangeMaxBin,
             removeCascadeDopplerDim, collapseCascadeElevation, collapseCascadeElevationMinZ, collapseCascadeElevationMaxZ, cascadeCloudIntensityThresholdPercent,
             includeLidarFrames, lidarFrameTotalHorizontalFov, lidarFrameTotalVerticalFov, lidarFrameMaxRange, collapseLidarFrameElevation, collapseLidarFrameElevationMinZ, collapseLidarFrameElevationMaxZ,
-            includeLidarMap, collapseMapElevation, collapseMapElevationMinZ, collapseMapElevationMaxZ,
+            includeLidarMap, collapseMapElevation, collapseMapElevationMinZ, collapseMapElevationMaxZ, lidarMapTransform,
             includeMapFrames, mapSampleTotalHorizontalFov, mapSampleTotalVerticalFov, mapSampleMaxRange, mapSamplingPreTransform, mapSamplingPoses, collapseMapSampleElevation, collapseMapSampleElevationMinZ, collapseMapSampleElevationMaxZ,
             removeLidarIntensity,
             includeTruePoses, includeCascadePoses, includeLidarPoses,
