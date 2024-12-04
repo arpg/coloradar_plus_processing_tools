@@ -222,7 +222,7 @@ std::filesystem::path coloradar::ColoradarPlusDataset::exportToFile(
 
     const bool& includeCascadeHeatmaps,
     const bool& includeCascadePointclouds,
-    const bool& cascadePointcloudsInBaseFrame,
+    const bool& cascadePointcloudsInGlobalFrame,
     const int& cascadeAzimuthMaxBin,
     const int& cascadeElevationMaxBin,
     const int& cascadeRangeMaxBin,
@@ -250,7 +250,7 @@ std::filesystem::path coloradar::ColoradarPlusDataset::exportToFile(
     const float& mapSampleTotalHorizontalFov,
     const float& mapSampleTotalVerticalFov,
     const float& mapSampleMaxRange,
-    const Eigen::Affine3f& mapSamplingSensorToBaseTransform,
+    const Eigen::Affine3f& mapSamplingBaseToSensorTransform,
     std::vector<Eigen::Affine3f> mapSamplingBasePoses,
     const bool& collapseMapSampleElevation,
     const float& collapseMapSampleElevationMinZ,
@@ -333,16 +333,22 @@ std::filesystem::path coloradar::ColoradarPlusDataset::exportToFile(
 //        finalConfig["data_dimensions"]['cascade_num_frames'][run->name] = numCascadeFrames;
 //        finalConfig["data_dimensions"]['lidar_num_frames'][run->name] = numLidarFrames;
 
-        auto poses = run->getPoses<Eigen::Affine3f>();
-        auto cascadePoses = run->interpolatePoses(poses, run->poseTimestamps(), run->cascadeTimestamps());
-        auto lidarPoses = run->interpolatePoses(poses, run->poseTimestamps(), run->lidarTimestamps());
+        std::vector<Eigen::Affine3f> poses = run->getPoses<Eigen::Affine3f>();
+        std::vector<Eigen::Affine3f> cascadePoses = run->interpolatePoses(poses, run->poseTimestamps(), run->cascadeTimestamps());
+        std::vector<Eigen::Affine3f> lidarPoses = run->interpolatePoses(poses, run->poseTimestamps(), run->lidarTimestamps());
+        for (int i = 0; i < numCascadeFrames; ++i) {
+            cascadePoses[i] = cascadePoses[i] * cascadeTransform_;
+        }
+        for (int i = 0; i < numLidarFrames; ++i) {
+            lidarPoses[i] = lidarPoses[i] * lidarTransform_;
+        }
 
         if (includeCascadePointclouds) {
             std::vector<float> framesFlat;
             std::vector<float> heatmapsFlat;
 
             for (size_t i = 0; i < numCascadeFrames; ++i) {
-                Eigen::Affine3f cascadeCloudTransform = cascadePointcloudsInBaseFrame ? cascadePoses[i] * cascadeTransform_ : Eigen::Affine3f::Identity();
+                Eigen::Affine3f cascadeCloudTransform = cascadePointcloudsInGlobalFrame ? cascadePoses[i] : Eigen::Affine3f::Identity();
                 pcl::PointCloud<coloradar::RadarPoint> rawCascadeCloud;
                 try {
                     rawCascadeCloud = run->getCascadePointcloud(i, cascadeCloudIntensityThresholdPercent);
@@ -426,7 +432,7 @@ std::filesystem::path coloradar::ColoradarPlusDataset::exportToFile(
                 try {
                     lidarMapSample = run->readMapFrame(i);
                 } catch (const std::filesystem::filesystem_error& e) {
-                    run->sampleMapFrames(mapSampleTotalHorizontalFov, mapSampleTotalVerticalFov, mapSampleMaxRange, mapSamplingSensorToBaseTransform, mapSamplingBasePoses);
+                    run->sampleMapFrames(mapSampleTotalHorizontalFov, mapSampleTotalVerticalFov, mapSampleMaxRange, mapSamplingBaseToSensorTransform, mapSamplingBasePoses);
                     lidarMapSample = run->readMapFrame(i);
                 }
                 if (collapseMapSampleElevation)
@@ -434,7 +440,7 @@ std::filesystem::path coloradar::ColoradarPlusDataset::exportToFile(
                 auto cloudFlat = flattenLidarCloud(lidarMapSample, collapseMapSampleElevation, true);
                 framesFlat.insert(framesFlat.end(), cloudFlat.begin(), cloudFlat.end());
             }
-            saveCloudsToHDF5(mapFrameContentName + "_" + run->name, datasetFile, framesFlat, numLidarFrames, lidarFrameNumDims);
+            saveCloudsToHDF5(mapFrameContentName + "_" + run->name, datasetFile, framesFlat, numCascadeFrames, mapFrameNumDims);
         }
         if (includeTruePoses) {
             savePosesToHDF5(truePosesContentName + "_" + run->name, datasetFile, poses);

@@ -1,4 +1,3 @@
-import h5py
 import numpy as np
 import open3d as o3d
 import argparse
@@ -52,7 +51,7 @@ def transform_points(points, transformation_matrix):
     return transformed_points[:3, :].T
 
 
-def set_camera_position(vis, pose, fixed_elevation=25.0):
+def set_camera_position(vis, pose, fixed_elevation=30.0):
     ctr = vis.get_view_control()
     transformation_matrix = pose_to_matrix(pose)
     target_position = transformation_matrix[:3, 3]
@@ -89,7 +88,7 @@ def show_pose(pose, vis):
     sphere = o3d.geometry.TriangleMesh.create_sphere(radius=0.2, resolution=20)
     sphere.translate(pose[:3])
     sphere.compute_vertex_normals()
-    color = np.array([0.05, 0.9, 0])
+    color = np.array([0.05, 0.8, 0.1])
     sphere.paint_uniform_color(color)
 
     arrow_length = 0.5
@@ -112,12 +111,10 @@ def show_pose(pose, vis):
 
 
 def show_frame(radar_points, pose, vis, radar_point_radius=0.05, intensity_threshold_percent=50):
-    # print(f'got {len(radar_points)} points')
     frame_max_intensity = np.max(radar_points[:, 3])
     radar_points_filtered = radar_points[radar_points[:, 3] >= frame_max_intensity * intensity_threshold_percent / 100]
     radar_points_filtered[:, 3] /= frame_max_intensity
     points, intensities = radar_points_filtered[:, :3], radar_points_filtered[:, 3]
-    # print(f'rendering {len(points)} points')
 
     transformation_matrix = pose_to_matrix(pose)
     transformed_points = transform_points(points, transformation_matrix)
@@ -145,12 +142,6 @@ def visualize(lidar_map_points, poses, radar_clouds, delay=0.2, lidar_voxel_size
     opt.background_color = np.asarray([0, 0, 0])
     opt.point_size = 1
 
-    # Trajectory setup
-    trajectory_points = [poses[0][:3]]  # Initial point
-    trajectory_lines = []
-    trajectory = None
-    # trajectory = o3d.geometry.LineSet()
-    # trajectory.colors = o3d.utility.Vector3dVector([[0, 1, 0]])  # Green color for the trajectory
     if frame_idx is not None:
         show_frame(radar_clouds[frame_idx], poses[frame_idx], vis)
         show_pose(poses[frame_idx], vis)
@@ -159,32 +150,13 @@ def visualize(lidar_map_points, poses, radar_clouds, delay=0.2, lidar_voxel_size
         vis.run()
         return
 
-    add = False
-
     for i, (pose, radar_cloud) in enumerate(zip(poses, radar_clouds)):
         radar_points = show_frame(radar_cloud, pose, vis)
         pose_sphere = show_pose(pose, vis)
-        current_point = pose[:3]
-
-        # if i > 0 and not np.allclose(current_point, trajectory_points[-1]):
-        #     if trajectory is not None:
-        #         vis.remove_geometry(trajectory)
-        #     trajectory = o3d.geometry.LineSet()
-        #     trajectory_points.append(current_point)
-        #     trajectory_lines.append([len(trajectory_points) - 2, len(trajectory_points) - 1])
-        #     trajectory.points = o3d.utility.Vector3dVector(trajectory_points)
-        #     trajectory.lines = o3d.utility.Vector2iVector(trajectory_lines)
-        #     trajectory.colors = o3d.utility.Vector3dVector([[0, 1, 0]])
-        #     vis.add_geometry(trajectory)
-        #
-        # print('Iteration:', i, 'Current point:', current_point)
-        # print('Trajectory points count:', len(trajectory_points))
-
         set_camera_position(vis, pose)
         vis.poll_events()
         vis.update_renderer()
         time.sleep(delay)
-
         for point in radar_points:
             vis.remove_geometry(point)
         vis.remove_geometry(pose_sphere)
@@ -198,7 +170,7 @@ if __name__ == "__main__":
     parser.add_argument("file", type=str, help="Path to the HDF5 file containing lidar and radar data")
     parser.add_argument("run_name", type=str, help="Run name")
     parser.add_argument("--occupancy_threshold", type=float, default=0.75, help="Minimum probability for lidar points to be considered occupied")
-    parser.add_argument("--intensity_threshold_percent", type=float, default=1.0, help="Percentage of max intensity for radar point inclusion")
+    parser.add_argument("--intensity_threshold_percent", type=float, default=.5, help="Percentage of max intensity for radar point inclusion")
     parser.add_argument("--delay", type=float, default=0.5, help="Delay between frames in seconds")
     parser.add_argument("-i", type=int, default=None, help="Static frame index")
     args = parser.parse_args()
@@ -208,6 +180,4 @@ if __name__ == "__main__":
     lidar_map_points, poses, radar_clouds = load_run_data(dataset, args.run_name, args.occupancy_threshold)
     if args.i is not None and (not isinstance(args.i, int) or args.i >= len(poses)):
         raise ValueError(f"Invalid frame index: expected integer from 0 to {len(poses) - 1}, got {args.i}")
-
-    # Visualize and animate the lidar map with camera following the poses
     visualize(lidar_map_points, poses, radar_clouds, args.delay, frame_idx=args.i)

@@ -227,7 +227,7 @@ void coloradar::ColoradarPlusRun::sampleMapFrames(
     const float& horizontalFov,
     const float& verticalFov,
     const float& range,
-    const Eigen::Affine3f& sensorToBaseTransform,
+    const Eigen::Affine3f& baseToSensorTransform,
     std::vector<Eigen::Affine3f> basePoses
 ) {
     for (const auto& entry : std::filesystem::directory_iterator(lidarMapsDirPath_)) {
@@ -240,7 +240,7 @@ void coloradar::ColoradarPlusRun::sampleMapFrames(
         basePoses = getPoses<Eigen::Affine3f>();
     pcl::PointCloud<pcl::PointXYZI> mapCloud = readLidarOctomap();
     for (size_t i = 0; i < basePoses.size(); ++i) {
-        Eigen::Affine3f radarPose = basePoses[i] * sensorToBaseTransform.inverse();
+        Eigen::Affine3f radarPose = basePoses[i] * baseToSensorTransform;
         pcl::PointCloud<pcl::PointXYZI> centeredCloud;
         pcl::transformPointCloud(mapCloud, centeredCloud, radarPose);
         filterFov(centeredCloud, horizontalFov, verticalFov, maxRange);

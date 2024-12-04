@@ -88,7 +88,7 @@ public:
         const float& horizontalFov,
         const float& verticalFov,
         const float& range,
-        const Eigen::Affine3f& sensorToBaseTransform = Eigen::Affine3f::Identity(),
+        const Eigen::Affine3f& baseToSensorTransform = Eigen::Affine3f::Identity(),
         std::vector<Eigen::Affine3f> basePoses = {}
     );
     pcl::PointCloud<pcl::PointXYZI> readMapFrame(const int& frameIdx);

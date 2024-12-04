@@ -42,7 +42,7 @@ public:
 
         const bool& includeCascadeHeatmaps = false,
         const bool& includeCascadePointclouds = false,
-        const bool& cascadePointcloudsInBaseFrame = false,
+        const bool& cascadePointcloudsInGlobalFrame = false,
         const int& cascadeAzimuthMaxBin = -1,
         const int& cascadeElevationMaxBin = -1,
         const int& cascadeRangeMaxBin = -1,
@@ -70,7 +70,7 @@ public:
         const float& mapSampleTotalHorizontalFov = 360,
         const float& mapSampleTotalVerticalFov = 180,
         const float& mapSampleMaxRange = 100,
-        const Eigen::Affine3f& mapSamplingSensorToBaseTransform = Eigen::Affine3f::Identity(),
+        const Eigen::Affine3f& mapSamplingBaseToSensorTransform = Eigen::Affine3f::Identity(),
         std::vector<Eigen::Affine3f> mapSamplingBasePoses = {},
         const bool& collapseMapSampleElevation = false,
         const float& collapseMapSampleElevationMinZ = -100,
