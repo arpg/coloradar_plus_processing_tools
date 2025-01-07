@@ -204,15 +204,32 @@ void saveCloudToHDF5(const std::string& name, H5::H5File& file, const std::vecto
     }
 }
 
-void saveCloudsToHDF5(const std::string& name, H5::H5File& file, const std::vector<float>& flatClouds, const int& numFrames, const int& numDims) {
-    int numPoints = flatClouds.size() / numFrames / numDims;
-    hsize_t dims[3] = {numFrames, numPoints, numDims};
-    H5::DataSpace dataspace(3, dims);
-    H5::PredType datatype = H5::PredType::NATIVE_FLOAT;
-    H5::DataSet dataset = file.createDataSet(name, datatype, dataspace);
-    if (numPoints > 0) {
-        dataset.write(flatClouds.data(), H5::PredType::NATIVE_FLOAT);
+//void saveCloudsToHDF5(const std::string& name, H5::H5File& file, const std::vector<float>& flatClouds, const int& numFrames, const int& numDims, const std::vector<hsize_t>& cloudSizes) {
+//    int numPoints = flatClouds.size() / numFrames / numDims;
+//    hsize_t dims[3] = {numFrames, numPoints, numDims};
+//    H5::DataSpace dataspace(3, dims);
+//    H5::PredType datatype = H5::PredType::NATIVE_FLOAT;
+//    H5::DataSet dataset = file.createDataSet(name, datatype, dataspace);
+//    if (numPoints > 0) {
+//        dataset.write(flatClouds.data(), H5::PredType::NATIVE_FLOAT);
+//    }
+//}
+
+void saveCloudsToHDF5(const std::string& name, H5::H5File& file, const std::vector<float>& flatClouds, const size_t& numFrames, const int& numDims, const std::vector<hsize_t>& cloudSizes) {
+    if (cloudSizes.size() != numFrames) {
+        throw std::invalid_argument("cloudSizes size must match the number of frames.");
     }
+    std::string sizeDatasetName = name + "_sizes";
+    hsize_t sizeDims[1] = {numFrames};
+    H5::DataSpace sizeDataspace(1, sizeDims);
+    H5::DataSet sizeDataset = file.createDataSet(sizeDatasetName, H5::PredType::NATIVE_HSIZE, sizeDataspace);
+    sizeDataset.write(cloudSizes.data(), H5::PredType::NATIVE_HSIZE);
+
+    hsize_t totalPoints = std::accumulate(cloudSizes.begin(), cloudSizes.end(), static_cast<hsize_t>(0));
+    hsize_t cloudDims[2] = {totalPoints, static_cast<hsize_t>(numDims)};
+    H5::DataSpace cloudDataspace(2, cloudDims);
+    H5::DataSet cloudDataset = file.createDataSet(name, H5::PredType::NATIVE_FLOAT, cloudDataspace);
+    cloudDataset.write(flatClouds.data(), H5::PredType::NATIVE_FLOAT);
 }
 
 
@@ -346,6 +363,7 @@ std::filesystem::path coloradar::ColoradarPlusDataset::exportToFile(
         if (includeCascadePointclouds) {
             std::vector<float> framesFlat;
             std::vector<float> heatmapsFlat;
+            std::vector<hsize_t> cloudSizes(numCascadeFrames);
 
             for (size_t i = 0; i < numCascadeFrames; ++i) {
                 Eigen::Affine3f cascadeCloudTransform = cascadePointcloudsInGlobalFrame ? cascadePoses[i] : Eigen::Affine3f::Identity();
@@ -373,10 +391,11 @@ std::filesystem::path coloradar::ColoradarPlusDataset::exportToFile(
                 if (collapseCascadeElevation) {
                     coloradar::collapseElevation(cascadeCloud, collapseCascadeElevationMinZ, collapseCascadeElevationMaxZ);
                 }
+                cloudSizes[i] = cascadeCloud.size();
                 auto cloudFlat = flattenRadarCloud(cascadeCloud, collapseCascadeElevation);
                 framesFlat.insert(framesFlat.end(), cloudFlat.begin(), cloudFlat.end());
             }
-            saveCloudsToHDF5(cascadeCloudContentName + "_" + run->name, datasetFile, framesFlat, numCascadeFrames, cascadeCloudNumDims);
+            saveCloudsToHDF5(cascadeCloudContentName + "_" + run->name, datasetFile, framesFlat, numCascadeFrames, cascadeCloudNumDims, cloudSizes);
             if (savedHeatmaps) saveHeatmapsToHDF5(cascadeHeatmapContentName + "_" + run->name, datasetFile, heatmapsFlat, numCascadeFrames, heatmapDims);
         }
         if (includeCascadeHeatmaps && !savedHeatmaps) {
@@ -397,36 +416,30 @@ std::filesystem::path coloradar::ColoradarPlusDataset::exportToFile(
         if (includeLidarFrames) {
             // finalConfig["data_content"].append(lidarFrameContentName);
             std::vector<float> framesFlat;
+            std::vector<hsize_t> cloudSizes(numLidarFrames);
             for (size_t i = 0; i < numLidarFrames; ++i) {
                 auto lidarFrame = run->getLidarPointCloud<pcl::PointCloud<pcl::PointXYZI>>(i);
                 coloradar::filterFov(lidarFrame, lidarFrameTotalHorizontalFov, lidarFrameTotalVerticalFov, lidarFrameMaxRange);
                 if (collapseLidarFrameElevation)
                     coloradar::collapseElevation(lidarFrame, collapseLidarFrameElevationMinZ, collapseLidarFrameElevationMaxZ);
+                cloudSizes[i] = lidarFrame.size();
                 auto cloudFlat = flattenLidarCloud(lidarFrame, collapseLidarFrameElevation, !removeLidarIntensity);
                 framesFlat.insert(framesFlat.end(), cloudFlat.begin(), cloudFlat.end());
             }
-            saveCloudsToHDF5(lidarFrameContentName + "_" + run->name, datasetFile, framesFlat, numLidarFrames, lidarFrameNumDims);
+            saveCloudsToHDF5(lidarFrameContentName + "_" + run->name, datasetFile, framesFlat, numLidarFrames, lidarFrameNumDims, cloudSizes);
         }
         if (includeLidarMap) {
-            // std::cout << "lidarMapTransform: " << lidarMapTransform.translation().transpose() << ", Rotation (Quaternion): " << Eigen::Quaternionf(lidarMapTransform.rotation()).coeffs().transpose() << std::endl;
-            // finalConfig["data_content"].append(lidarMapContentName);
             pcl::PointCloud<pcl::PointXYZI> mapRaw = run->readLidarOctomap();
             pcl::PointCloud<pcl::PointXYZI> map;
             pcl::transformPointCloud(mapRaw, map, lidarMapTransform);
-//            for (size_t i = 0; i < 5; ++i)
-//                std::cout << mapRaw.points[i].z << " ";
-//            std::cout << std::endl;
-//            for (size_t i = 0; i < 5; ++i)
-//                std::cout << map.points[i].z << " ";
-//            std::cout << std::endl;
             if (collapseMapElevation)
                 coloradar::collapseElevation(map, collapseMapElevationMinZ, collapseMapElevationMaxZ);
             std::vector<float> mapFlat = flattenLidarCloud(map, collapseMapElevation, true);
             saveCloudToHDF5(lidarMapContentName + "_" + run->name, datasetFile, mapFlat, lidarMapNumDims);
         }
         if (includeMapFrames) {
-            // finalConfig["data_content"].append(mapFrameContentName);
             std::vector<float> framesFlat;
+            std::vector<hsize_t> cloudSizes(numCascadeFrames);
             for (size_t i = 0; i < numCascadeFrames; ++i) {
                 pcl::PointCloud<pcl::PointXYZI> lidarMapSample;
                 try {
@@ -437,10 +450,11 @@ std::filesystem::path coloradar::ColoradarPlusDataset::exportToFile(
                 }
                 if (collapseMapSampleElevation)
                     coloradar::collapseElevation(lidarMapSample, collapseMapSampleElevationMinZ, collapseMapSampleElevationMaxZ);
+                cloudSizes[i] = lidarMapSample.size();
                 auto cloudFlat = flattenLidarCloud(lidarMapSample, collapseMapSampleElevation, true);
                 framesFlat.insert(framesFlat.end(), cloudFlat.begin(), cloudFlat.end());
             }
-            saveCloudsToHDF5(mapFrameContentName + "_" + run->name, datasetFile, framesFlat, numCascadeFrames, mapFrameNumDims);
+            saveCloudsToHDF5(mapFrameContentName + "_" + run->name, datasetFile, framesFlat, numCascadeFrames, mapFrameNumDims, cloudSizes);
         }
         if (includeTruePoses) {
             savePosesToHDF5(truePosesContentName + "_" + run->name, datasetFile, poses);

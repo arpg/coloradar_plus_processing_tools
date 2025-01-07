@@ -226,9 +226,9 @@ PYBIND11_MODULE(coloradar_dataset_tools, m) {
             pcl::PointCloud<coloradar::RadarPoint> cloud = self.getCascadePointcloud(cloudIdx, intensityThresholdPercent); return radarCloudToNumpy(cloud);
         }, py::arg("cloud_idx"), py::arg("intensity_threshold_percent") = 0)
 
-        .def("create_lidar_octomap", [](coloradar::ColoradarPlusRun& self, const double mapResolution, const float lidarTotalHorizontalFov, const float lidarTotalVerticalFov, const float lidarMaxRange, const py::array_t<float>& lidarToBaseTransformArray) {
-            self.createLidarOctomap(mapResolution, lidarTotalHorizontalFov, lidarTotalVerticalFov, lidarMaxRange, numpyToPose(lidarToBaseTransformArray));
-        }, py::arg("map_resolution") = 0.5, py::arg("lidar_total_horizontal_fov") = 360, py::arg("lidar_total_vertical_fov") = 180, py::arg("lidar_max_range") = 100, py::arg("lidar_to_base_transform") = poseToNumpy(Eigen::Affine3f::Identity()))
+        .def("create_lidar_octomap", [](coloradar::ColoradarPlusRun& self, const double mapResolution, const float lidarTotalHorizontalFov, const float lidarTotalVerticalFov, const float lidarMaxRange, const py::array_t<float>& baseToLidarTransformArray) {
+            self.createLidarOctomap(mapResolution, lidarTotalHorizontalFov, lidarTotalVerticalFov, lidarMaxRange, numpyToPose(baseToLidarTransformArray));
+        }, py::arg("map_resolution") = 0.5, py::arg("lidar_total_horizontal_fov") = 360, py::arg("lidar_total_vertical_fov") = 180, py::arg("lidar_max_range") = 100, py::arg("base_to_lidar_transform") = poseToNumpy(Eigen::Affine3f::Identity()))
         .def("sample_map_frames", [](coloradar::ColoradarPlusRun& self, const float& totalHorizontalFov, const float& totalVerticalFov, const float& range, const py::array_t<float>& baseToSensorTransformArray, const py::array_t<float>& basePosesArray) {
             self.sampleMapFrames(totalHorizontalFov, totalVerticalFov, range, numpyToPose(baseToSensorTransformArray), numpyToPoses(basePosesArray));
         }, py::arg("total_horizontal_fov") = 360, py::arg("total_vertical_fov") = 180, py::arg("range") = 100, py::arg("base_to_sensor_transform") = poseToNumpy(Eigen::Affine3f::Identity()), py::arg("base_poses") = py::none())

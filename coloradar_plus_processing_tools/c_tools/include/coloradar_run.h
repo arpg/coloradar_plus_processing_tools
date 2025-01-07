@@ -72,7 +72,7 @@ public:
         const float& lidarTotalHorizontalFov,
         const float& lidarTotalVerticalFov,
         const float& lidarMaxRange,
-        Eigen::Affine3f lidarToBaseTransform = Eigen::Affine3f::Identity()
+        Eigen::Affine3f baseToLidarTransform = Eigen::Affine3f::Identity()
     );
     void saveLidarOctomap(const octomap::OcTree& tree);
     pcl::PointCloud<pcl::PointXYZI> readLidarOctomap();
@@ -81,7 +81,7 @@ public:
         const float& lidarTotalHorizontalFov,
         const float& lidarTotalVerticalFov,
         const float& lidarMaxRange,
-        Eigen::Affine3f lidarToBaseTransform = Eigen::Affine3f::Identity()
+        Eigen::Affine3f baseToLidarTransform = Eigen::Affine3f::Identity()
     );
 
     void sampleMapFrames(
