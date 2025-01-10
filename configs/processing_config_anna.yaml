@@ -1,0 +1,22 @@
+# ColoradarPlus Processing Configuration
+
+main_bag_directory_path: "/root/coloradar_plus/bags/WITH_GT"
+main_kitti_directory_path: "/root/coloradar_plus/kitti"
+generate_sequence_run_stats: true
+display_rosbag_data: false
+
+sequences:
+  c4c_garage: 
+    runs: [0, 2, 3, 4, 6]
+
+  ec_hallways:
+    runs: [0, 2, 4, 5, 6, 7, 8]
+
+  irl:
+    runs: [0, 1, 2, 3, 4, 5, 6, 7, 8]
+
+  ec_courtyard:
+    runs: [0, 1, 2, 3, 4]
+
+  regent_garage:
+    runs: [0, 1, 3, 4]
