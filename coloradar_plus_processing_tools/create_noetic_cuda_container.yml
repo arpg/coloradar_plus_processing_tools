@@ -1,0 +1,17 @@
+services:
+  cuda-noetic:
+    build:
+      context: .
+      dockerfile: Dockerfile.cuda-noetic
+      args:
+        BASE_IMAGE: ${ROS_BASE_IMAGE}
+        DOCKER_CACHE_SEED: ${DOCKER_CACHE_SEED}
+    runtime: nvidia
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+    volumes:
+      - ~/projects:/root/projects
+      - ~/coloradar:/root/coloradar
+      - /media/arpg/brendan-ssd/coloradarplus_data:/root/bags
+    tty: true
+    image: cuda-noetic

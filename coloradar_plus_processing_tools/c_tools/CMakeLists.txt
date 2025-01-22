@@ -42,6 +42,16 @@ add_library(coloradar_tools SHARED
 target_link_libraries(coloradar_tools ${PCL_LIBRARIES} ${OCTOMAP_LIBRARIES} ${HDF5_LIBRARIES})
 
 
+if(pybind11_FOUND)
+    message(STATUS "Pybind11 found, compiling Python bindings.")
+    find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
+    pybind11_add_module(coloradar_dataset_tools data_prep/python_bindings.cpp)
+    target_link_libraries(coloradar_dataset_tools PRIVATE coloradar_tools)
+else()
+    message(WARNING "Pybind11 not found, skipping Python bindings compilation.")
+endif()
+
+
 if(CUDA_FOUND)
     message(STATUS "CUDA found, compiling CUDA code.")
     set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -std=c++20")
@@ -53,19 +63,15 @@ if(CUDA_FOUND)
     target_link_libraries(coloradar_cuda coloradar_tools ${CUDA_LIBS})
     include_directories(${CUDA_INCLUDE_DIRS})
 
+    if(pybind11_FOUND)
+        pybind11_add_module(coloradar_cuda_tools data_prep/cuda_python_bindings.cpp)
+        target_link_libraries(coloradar_cuda_tools PRIVATE coloradar_cuda)
+    endif()
+
     # cuda_add_executable(compare_heatmaps data_prep/compare_heatmaps.cu)
     # target_link_libraries(compare_heatmaps coloradar_cuda)
 else()
     message(STATUS "CUDA not found, skipping CUDA compilation.")
-endif()
-
-if(pybind11_FOUND)
-    message(STATUS "Pybind11 found, compiling Python bindings.")
-    find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
-    pybind11_add_module(coloradar_dataset_tools data_prep/python_bindings.cpp)
-    target_link_libraries(coloradar_dataset_tools PRIVATE coloradar_tools)
-else()
-    message(WARNING "Pybind11 not found, skipping Python bindings compilation.")
 endif()
 
 

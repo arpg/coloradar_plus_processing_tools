@@ -78,3 +78,13 @@ Verbose testing:
 colcon test --event-handler console_direct+
 ```
 
+## Utils
+
+### ROS 1 Noetic + Cuda Docker Container
+1. Edit volumes in coloradar_plus_processing_tools/create_noetic_cuda_container.yml
+2. Run script
+```bash
+chmod +x coloradar_plus_processing_tools/create_noetic_cuda_container.sh
+./coloradar_plus_processing_tools/create_noetic_cuda_container.sh
+```
+
