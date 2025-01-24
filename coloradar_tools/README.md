@@ -14,7 +14,7 @@ apt install pybind11-dev
 #### 2. Build:
 ```bash
 mkdir build
-cmake -S coloradar_plus_processing_tools/c_tools -B build
+cmake -S coloradar_tools/src -B build
 make -C build
 ```
 
@@ -84,7 +84,7 @@ colcon test --event-handler console_direct+
 1. Edit volumes in coloradar_plus_processing_tools/create_noetic_cuda_container.yml
 2. Run script
 ```bash
-chmod +x coloradar_plus_processing_tools/create_noetic_cuda_container.sh
-./coloradar_plus_processing_tools/create_noetic_cuda_container.sh
+chmod +x coloradar_plus_processing_tools/build_container.sh
+./coloradar_plus_processing_tools/build_container.sh
 ```
 

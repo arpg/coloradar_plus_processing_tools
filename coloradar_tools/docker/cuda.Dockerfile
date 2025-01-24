@@ -6,13 +6,16 @@ ENV CUDA_VERSION_DASH=${DOCKER_CUDA_VERSION/./-}
 ENV DEBIAN_FRONTEND=noninteractive
 ENV LANG=C.UTF-8
 
+
+RUN apt update && apt upgrade -y
+RUN apt install -y apt-utils
+
 RUN ln -fs /usr/share/zoneinfo/Etc/UTC /etc/localtime && \
     echo "tzdata tzdata/Areas select Etc" | debconf-set-selections && \
     echo "tzdata tzdata/Zones/Etc select UTC" | debconf-set-selections
 
-RUN apt update && apt upgrade -y
-RUN apt install -y wget curl lsb-release gnupg software-properties-common build-essential
 RUN apt install -y cuda-toolkit-${CUDA_VERSION_DASH}
 RUN nvcc --version
+
 
 CMD ["bash"]

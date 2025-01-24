@@ -1,0 +1,6 @@
+h5py
+matplotlib
+open3d
+pip-review
+scikit-learn
+tqdm

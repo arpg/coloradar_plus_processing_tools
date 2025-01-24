@@ -2,11 +2,12 @@ services:
   cuda-noetic:
     build:
       context: .
-      dockerfile: Dockerfile.cuda-noetic
+      dockerfile: docker/ros.Dockerfile
       args:
         BASE_IMAGE: ${ROS_BASE_IMAGE}
         DOCKER_CACHE_SEED: ${DOCKER_CACHE_SEED}
     runtime: nvidia
+    network_mode: "host"
     environment:
       - NVIDIA_VISIBLE_DEVICES=all
     volumes:

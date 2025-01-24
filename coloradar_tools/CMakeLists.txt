@@ -22,22 +22,22 @@ find_package(VTK COMPONENTS mpi REQUIRED)
 find_package(PCL 1.12 REQUIRED)
 find_package(octomap REQUIRED)
 find_package(OpenCV REQUIRED)
-find_package(CUDA 12.6)
+find_package(CUDA)
 find_package(HDF5 REQUIRED COMPONENTS C CXX)
 find_package(pybind11)
 
 set(CUDA_LIBS ${CUDA_LIBRARIES} ${CUDA_CUFFT_LIBRARIES})
-include_directories(${PROJECT_SOURCE_DIR}/include ${PCL_INCLUDE_DIRS} ${OCTOMAP_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS})
+include_directories(${PROJECT_SOURCE_DIR}/src/include ${PCL_INCLUDE_DIRS} ${OCTOMAP_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS})
 
 ### LIBS
 
 add_library(coloradar_tools SHARED
-    libs/internal.cpp
-    libs/configs.cpp
-    libs/pcl_functions.cpp
-    libs/octo_pointcloud.cpp
-    libs/coloradar_run.cpp
-    libs/dataset.cpp
+    src/libs/internal.cpp
+    src/libs/configs.cpp
+    src/libs/pcl_functions.cpp
+    src/libs/octo_pointcloud.cpp
+    src/libs/coloradar_run.cpp
+    src/libs/dataset.cpp
 )
 target_link_libraries(coloradar_tools ${PCL_LIBRARIES} ${OCTOMAP_LIBRARIES} ${HDF5_LIBRARIES})
 
@@ -45,7 +45,7 @@ target_link_libraries(coloradar_tools ${PCL_LIBRARIES} ${OCTOMAP_LIBRARIES} ${HD
 if(pybind11_FOUND)
     message(STATUS "Pybind11 found, compiling Python bindings.")
     find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
-    pybind11_add_module(coloradar_dataset_tools data_prep/python_bindings.cpp)
+    pybind11_add_module(coloradar_dataset_tools src/data_prep/python_bindings.cpp)
     target_link_libraries(coloradar_dataset_tools PRIVATE coloradar_tools)
 else()
     message(WARNING "Pybind11 not found, skipping Python bindings compilation.")
@@ -57,18 +57,18 @@ if(CUDA_FOUND)
     set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -std=c++20")
 
     cuda_add_library(coloradar_cuda SHARED
-        libs/cuda_kernels.cu
-        libs/radar_processing.cu
+        src/libs/cuda_kernels.cu
+        src/libs/radar_processing.cu
     )
     target_link_libraries(coloradar_cuda coloradar_tools ${CUDA_LIBS})
     include_directories(${CUDA_INCLUDE_DIRS})
 
     if(pybind11_FOUND)
-        pybind11_add_module(coloradar_cuda_tools data_prep/cuda_python_bindings.cpp)
+        pybind11_add_module(coloradar_cuda_tools src/data_prep/cuda_python_bindings.cpp)
         target_link_libraries(coloradar_cuda_tools PRIVATE coloradar_cuda)
     endif()
 
-    # cuda_add_executable(compare_heatmaps data_prep/compare_heatmaps.cu)
+    # cuda_add_executable(compare_heatmaps src/data_prep/compare_heatmaps.cu)
     # target_link_libraries(compare_heatmaps coloradar_cuda)
 else()
     message(STATUS "CUDA not found, skipping CUDA compilation.")
@@ -77,32 +77,32 @@ endif()
 
 ### TESTS
 
-add_executable(coloradar_tests test/test_coloradar_tools.cpp)
+add_executable(coloradar_tests src/test/test_coloradar_tools.cpp)
 target_link_libraries(coloradar_tests coloradar_tools gtest gtest_main pthread)
 
 
 ### SCRIPTS
 
-add_executable(test data_prep/test.cpp)
-target_link_libraries(test coloradar_tools)
+# add_executable(test src/data_prep/test.cpp)
+# target_link_libraries(test coloradar_tools)
 
-# add_executable(interpolate_poses_for_lidar data_prep/interpolate_poses_for_lidar.cpp)
+# add_executable(interpolate_poses_for_lidar src/data_prep/interpolate_poses_for_lidar.cpp)
 # target_link_libraries(interpolate_poses_for_lidar coloradar_tools)
 
-# add_executable(interpolate_poses_for_radar data_prep/interpolate_poses_for_radar.cpp)
+# add_executable(interpolate_poses_for_radar src/data_prep/interpolate_poses_for_radar.cpp)
 # target_link_libraries(interpolate_poses_for_radar coloradar_tools)
 
-# add_executable(filter_cloud data_prep/filter_cloud.cpp)
+# add_executable(filter_cloud src/data_prep/filter_cloud.cpp)
 # target_link_libraries(filter_cloud coloradar_tools)
 
-# add_executable(build_octomap data_prep/build_octomap.cpp)
+# add_executable(build_octomap src/data_prep/build_octomap.cpp)
 # target_link_libraries(build_octomap coloradar_tools)
 
-# add_executable(sample_map_frames data_prep/sample_map_frames.cpp)
+# add_executable(sample_map_frames src/data_prep/sample_map_frames.cpp)
 # target_link_libraries(sample_map_frames coloradar_tools)
 
-# add_executable(create_cascade_pointclouds data_prep/create_cascade_pointclouds.cpp)
+# add_executable(create_cascade_pointclouds src/data_prep/create_cascade_pointclouds.cpp)
 # target_link_libraries(create_cascade_pointclouds coloradar_tools)
 
-# add_executable(make_dataset data_prep/make_dataset.cpp)
+# add_executable(make_dataset src/data_prep/make_dataset.cpp)
 # target_link_libraries(make_dataset coloradar_tools)
