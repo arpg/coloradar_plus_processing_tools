@@ -10,7 +10,7 @@
 #include <sstream>
 #include <regex>
 #include <Eigen/Dense>
-#include <json/json.h>
+#include <jsoncpp/json/json.h>
 
 
 namespace coloradar::internal {

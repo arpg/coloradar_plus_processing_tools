@@ -33,18 +33,21 @@ if [ ! -f "$PYTHON_SCRIPT" ]; then
     echo "Error: Python script '$PYTHON_SCRIPT' not found. Ensure it exists and is executable."
     exit 1
 fi
-BASE_IMAGE=$(python3 "$PYTHON_SCRIPT" --cuda "$CUDA_VERSION" --ros "$ROS_DISTRO")
-if [ $? -ne 0 ] || [ -z "$BASE_IMAGE" ]; then
+OUT=$(python3 "$PYTHON_SCRIPT" --cuda "$CUDA_VERSION" --ros "$ROS_DISTRO")
+eval "$OUT"
+if [ $? -ne 0 ] || [ -z "$DOCKER_BASE_IMAGE" ]; then
     echo "Error: Failed to determine base image."
-    echo "$BASE_IMAGE"
+    echo "$OUT"
     exit 1
 fi
+BASE_IMAGE=$DOCKER_BASE_IMAGE
 echo "Using base image: $BASE_IMAGE"
 
 
 # Build OS image
-UBUNTU_VERSION=$(echo "$BASE_IMAGE" | grep -oP "ubuntu:\K[0-9]+\.[0-9]+|ubuntu\K[0-9]+\.[0-9]+$")
-OS_IMAGE_NAME="ubuntu-local:$UBUNTU_VERSION"
+# UBUNTU_VERSION=$(echo "$BASE_IMAGE" | grep -oP "ubuntu:\K[0-9]+\.[0-9]+|ubuntu\K[0-9]+\.[0-9]+$")
+echo "Using OS $DOCKER_UBUNTU_VERSION"
+OS_IMAGE_NAME="ubuntu-local:$DOCKER_UBUNTU_VERSION"
 if [ -n "$CUDA_VERSION" ]; then
     OS_IMAGE_NAME="${OS_IMAGE_NAME}-cuda$CUDA_VERSION"
     CUDA_IMAGE_NAME="cuda-local:$CUDA_VERSION"
@@ -70,8 +73,8 @@ fi
 # Build lib image
 TAG=$(echo "$OS_IMAGE_NAME" | awk -F: '{print $2}')
 MAIN_IMAGE_NAME="coloradar-tools:$TAG"
-echo "Building main image: $MAIN_IMAGE_NAME"
-docker build --build-arg BASE_IMAGE="$BASE_IMAGE" -f "coloradar_tools/docker/main.Dockerfile" -t "$MAIN_IMAGE_NAME" .
+echo "Building main image: $MAIN_IMAGE_NAME with gcc $DOCKER_GCC_VERSION"
+docker build --build-arg BASE_IMAGE="$BASE_IMAGE" --build-arg GCC_VERSION="$DOCKER_GCC_VERSION" -f "coloradar_tools/docker/main.Dockerfile" -t "$MAIN_IMAGE_NAME" .
 
 
 # Create container
