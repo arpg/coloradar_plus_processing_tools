@@ -1,8 +1,8 @@
 services:
   cuda-noetic:
     build:
-      context: .
-      dockerfile: docker/ros.Dockerfile
+      context: ../coloradar_tools
+      dockerfile: ros.Dockerfile
       args:
         BASE_IMAGE: ${ROS_BASE_IMAGE}
         DOCKER_CACHE_SEED: ${DOCKER_CACHE_SEED}

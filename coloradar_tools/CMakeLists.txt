@@ -2,15 +2,6 @@ cmake_minimum_required(VERSION 3.12)
 project(coloradar_tools VERSION 0.1 LANGUAGES C CXX)
 
 
-# find_program(GCC_COMPILER NAMES gcc-12 gcc-11 gcc-10 gcc-9 gcc-8 gcc-7 PATHS /usr/bin NO_DEFAULT_PATH)
-# if (NOT GCC_COMPILER)
-#     message(FATAL_ERROR "No suitable GCC compiler found below version 13!")
-# endif()
-# string(REGEX REPLACE "gcc-[0-9]+" "g++" GPP_COMPILER ${GCC_COMPILER})
-# set(CMAKE_C_COMPILER ${GCC_COMPILER} CACHE PATH "C compiler" FORCE)
-# set(CMAKE_CXX_COMPILER ${GPP_COMPILER} CACHE PATH "C++ compiler" FORCE)
-# message(STATUS "Using compiler: ${GCC_COMPILER}")
-
 find_program(GCC_COMPILER NAMES gcc-12 gcc-11 gcc-10 PATHS /usr/bin NO_DEFAULT_PATH)
 if (NOT GCC_COMPILER)
     message(FATAL_ERROR "No suitable GCC compiler found! Please ensure GCC version 10, 11, or 12 is installed.")
@@ -25,39 +16,31 @@ message(STATUS "Using G++ compiler: ${GPP_COMPILER}")
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_compile_options(-fconcepts)
-# set(CMAKE_CXX_EXTENSIONS OFF)
-# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++20")
-# add_definitions(-DBOOST_BIND_GLOBAL_PLACEHOLDERS)
-# add_definitions(-DBOOST_NO_CXX20_ALLOCATOR_TRAITS)
-# add_definitions(-DBOOST_SYSTEM_NO_DEPRECATED -DBOOST_ERROR_CODE_HEADER_ONLY)
-# add_definitions(-DBOOST_NO_CXX20_ALLOCATOR)
-# add_compile_options(-Wno-c++20-compat)
-# add_definitions(-DBOOST_DISABLE_ASSERTS)
+set(BOOST_ROOT "/usr/local")
+set(BOOST_INCLUDEDIR "/usr/local/include")
+set(BOOST_LIBRARYDIR "/usr/local/lib")
+set(PYBIND11_ROOT "/usr/local")
+set(PYBIND11_INCLUDEDIR "/usr/local/include")
+set(PYBIND11_LIBRARYDIR "/usr/local/lib")
 
 
+find_package(Boost 1.78 REQUIRED COMPONENTS system filesystem thread)
 find_package(MPI REQUIRED)
 # find_package(VTK COMPONENTS mpi REQUIRED)
 find_package(VTK REQUIRED)
-find_package(PCL 1.10 REQUIRED)
-# find_package(PCL 1.12 REQUIRED)
+find_package(PCL 1.12 REQUIRED)
 find_package(octomap REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(jsoncpp REQUIRED)
-find_package(Boost 1.78 REQUIRED)
 find_package(CUDA)
 find_package(HDF5 REQUIRED COMPONENTS C CXX)
-find_package(pybind11)
+find_package(pybind11 2.6)
 
 set(CUDA_LIBS ${CUDA_LIBRARIES} ${CUDA_CUFFT_LIBRARIES})
 # include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
-include_directories(${PROJECT_SOURCE_DIR}/src/include ${PCL_INCLUDE_DIRS} ${OCTOMAP_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS} ${JSONCPP_INCLUDE_DIRS})
+include_directories(${PROJECT_SOURCE_DIR}/src/include ${Boost_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS} ${OCTOMAP_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS} ${JSONCPP_INCLUDE_DIRS})
 
 ### LIBS
-
-# add_library(boost_target INTERFACE)
-# target_compile_definitions(boost_target INTERFACE -DBOOST_NO_CXX20_ALLOCATOR)
-# target_include_directories(boost_target SYSTEM INTERFACE ${Boost_INCLUDE_DIRS})
-
 
 
 add_library(coloradar_tools SHARED
@@ -68,7 +51,7 @@ add_library(coloradar_tools SHARED
     src/libs/coloradar_run.cpp
     src/libs/dataset.cpp
 )
-target_link_libraries(coloradar_tools boost_target ${PCL_LIBRARIES} ${OCTOMAP_LIBRARIES} ${HDF5_LIBRARIES} ${JSONCPP_LIBRARIES})
+target_link_libraries(coloradar_tools ${PCL_LIBRARIES} ${OCTOMAP_LIBRARIES} ${HDF5_LIBRARIES} ${JSONCPP_LIBRARIES})
 
 
 if(pybind11_FOUND)

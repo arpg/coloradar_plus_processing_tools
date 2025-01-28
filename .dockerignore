@@ -1,0 +1,53 @@
+# Data files
+*.h5
+*.bag
+
+# General exclusions
+*.log
+*.tmp
+*.swp
+*.swo
+*.bak
+*.orig
+
+# Python
+*.pyc
+*.pyo
+__pycache__/
+*.egg-info/
+.env
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Node.js
+node_modules/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+
+# Build artifacts
+build/
+dist/
+*.o
+*.so
+*.a
+*.out
+*.class
+
+# Temporary files and directories
+tmp/
+temp/
+.cache/
+.DS_Store
+.idea/
+.vscode/
+
+# Docker-related
+Dockerfile~
+docker-compose.override.yml
+
+# System files
+Thumbs.db

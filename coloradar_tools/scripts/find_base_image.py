@@ -1,22 +1,11 @@
 import argparse
-import os
 import re
 import requests
 import sys
+import yaml
 
 
-ROS_REQUIREMENTS = {
-    None: {
-        'ubuntu_version': '24.04',
-        'gcc_version': '12',
-        'python_version': '3.11'
-    },
-    'noetic': {
-        'ubuntu_version': '20.04',
-        'gcc_version': '11',
-        'python_version': '3.11'
-    }
-}
+ROS_VERSIONS_FILE = 'docker/ros-versions.yaml'
 
 
 def validate_cuda_version(cuda_version):
@@ -38,18 +27,10 @@ def validate_cuda_version(cuda_version):
     return cuda_version
 
 
-def validate_ros_version(ros_version):
-    ros_version = ros_version or None
-    if ros_version not in ROS_REQUIREMENTS:
-        print(f"Error: ROS version must be one of the following: {tuple(ROS_REQUIREMENTS.keys())}, not {ros_version}")
-        sys.exit(1)
-    return ros_version
-
-
-def determine_base_image(cuda_version, ros_version):
+def determine_base_image(cuda_version, ros_version_config):
     if cuda_version is None:
-        return f'ubuntu:{ROS_REQUIREMENTS[ros_version]["ubuntu_version"]}'
-    image_postfix = f'-base-ubuntu{ROS_REQUIREMENTS[ros_version]["ubuntu_version"]}'
+        return f'ubuntu:{ros_version_config["ubuntu"]}'
+    image_postfix = f'-base-ubuntu{ros_version_config["ubuntu"]}'
     image_tag = get_latest_cuda_tag(cuda_version, image_postfix)
     return f'nvidia/cuda:{image_tag}'
 
@@ -91,18 +72,22 @@ def get_latest_cuda_tag(cuda_version, base_image_postfix):
         sys.exit(1)
 
 
-def export_settings(**env_dict):
-    for key, value in env_dict.items():
-        env_name = f'DOCKER_{key.upper()}'
-        # os.environ[env_name] = value
-        print(f'export {env_name}={value}')
+def parse_ros_config(yaml_file):
+    with open(yaml_file, 'r') as file:
+        data = yaml.safe_load(file)
+    return {None if k == 'default' else k: v for k, v in data['ros_versions'].items()}
 
 
 def main(cuda_version, ros_version):
+    ros_config = parse_ros_config(ROS_VERSIONS_FILE)
+    ros_version = ros_version or None
+    if ros_version not in ros_config:
+        print(f"Error: ROS version must be one of the following: {tuple(ros_config.keys())}, not {ros_version}")
+        sys.exit(1)
+
+    version_config = ros_config[ros_version]
     cuda_version = validate_cuda_version(cuda_version)
-    ros_version = validate_ros_version(ros_version)
-    base_image = determine_base_image(cuda_version, ros_version)
-    export_settings(base_image=base_image, ros_version=ros_version, cuda_version=cuda_version, **ROS_REQUIREMENTS[ros_version])
+    base_image = determine_base_image(cuda_version, version_config)
     return base_image
 
 
@@ -112,3 +97,4 @@ if __name__ == "__main__":
     parser.add_argument("--ros", required=False, help="ROS version (e.g., noetic).")
     args = parser.parse_args()
     image = main(args.cuda, args.ros)
+    print(image)

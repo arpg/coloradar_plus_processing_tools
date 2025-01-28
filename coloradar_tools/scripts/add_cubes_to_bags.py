@@ -5,11 +5,15 @@ import pandas as pd
 import argparse
 
 
-cwd = os.getcwd()
-if cwd.endswith(os.path.join("coloradar_plus_processing_tools", "coloradar_plus_processing_tools")):
-    build_dir = os.path.join(cwd, "..", "build")
+in_docker = os.path.exists("/.dockerenv")
+if in_docker:
+    build_dir = '/src/coloradar_tools/build'
 else:
-    build_dir = os.path.join(cwd, "build")
+    cwd = os.getcwd()
+    if cwd.endswith(os.path.join("coloradar_plus_processing_tools", "coloradar_tools")):
+        build_dir = os.path.join(cwd, "..", "build")
+    else:
+        build_dir = os.path.join(cwd, "build")
 sys.path.append(build_dir)
 import coloradar_dataset_tools as tools
 import coloradar_cuda_tools as cuda_tools
@@ -212,7 +216,11 @@ if __name__ == "__main__":
     # parser.add_argument("bag_file", help="Path to the ROS bag file.")
     # args = parser.parse_args()
     # file_name = '/media/arpg/brendan-ssd/coloradarplus_data/bike_path_run0_liosam.bag'
-    file_name = '/root/bags/bike_path_run0_liosam.bag'
+    if in_docker:
+        file_name = '/root/bags/bike_path_run0_liosam.bag'
+    else:
+        file_name = None
+
     get_topic_info(file_name, '/cascade/data_cube')
 
     # parser = argparse.ArgumentParser(description="Get information about a specific topic in a bag file.")
