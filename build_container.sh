@@ -78,14 +78,14 @@ DOCKER_PYBIND_VERSION=$(yq ".ubuntu_versions.\"$UBUNTU_VERSION\".pybind" "$CONFI
 docker build --build-arg BASE_IMAGE=$OS_IMAGE_NAME --build-arg DOCKER_GCC_VERSION="$DOCKER_GCC_VERSION" --build-arg DOCKER_BOOST_VERSION="$DOCKER_BOOST_VERSION" --build-arg DOCKER_PCL_VERSION="$DOCKER_PCL_VERSION" --build-arg DOCKER_PYBIND_VERSION="$DOCKER_PYBIND_VERSION" -f "docker/tools.Dockerfile" -t "$LIB_IMAGE_NAME" .
 
 
-## Create container
-#COMMAND="docker run -it --name coloradar-tools"
-#if [ -n "$CUDA_VERSION" ]; then
-#    COMMAND="${COMMAND} --gpus all"
-#fi
-#COMMAND="${COMMAND} ${MAIN_IMAGE_NAME}"
-#echo "Run the command below to start the container. Add volumes via -v if necessary."
-#echo "$COMMAND"
+# Create container
+COMMAND="docker run -it --name coloradar-tools"
+if [ -n "$CUDA_VERSION" ]; then
+    COMMAND="${COMMAND} --gpus all"
+fi
+COMMAND="${COMMAND} ${LIB_IMAGE_NAME} bash"
+echo "Run the command below to start the container. Add volumes via -v if necessary."
+echo "$COMMAND"
 
 
 

@@ -32,6 +32,10 @@ RUN if [ -n "$DOCKER_BOOST_VERSION" ]; then \
     fi
 
 
+# Other dependencies
+RUN apt install -y liboctomap-dev libgtest-dev libopencv-dev libopenmpi-dev openmpi-bin libjsoncpp-dev
+
+
 # PCL
 ARG DOCKER_PCL_VERSION=""
 RUN if [ -n "$DOCKER_PCL_VERSION" ]; then \
@@ -60,15 +64,11 @@ RUN if [ -n "$DOCKER_PYBIND_VERSION" ]; then \
     fi
 
 
-# Other dependencies
-RUN apt install -y liboctomap-dev libgtest-dev libopencv-dev libopenmpi-dev openmpi-bin libjsoncpp-dev
-
-
 # Cleanup
 RUN rm -rf tmp/*
 
 
-# Build Tools
+# Datatset Tools
 COPY coloradar_tools /src/coloradar_tools
 WORKDIR /src/coloradar_tools
 
@@ -77,8 +77,10 @@ RUN cmake -B build
 RUN make -C build
 RUN ./build/coloradar_tests
 
-#RUN python3.11 -m venv /opt/venv
-#RUN pip3.11 install --upgrade pip
-#RUN pip3.11 install -r requirements.txt
+
+# Python dependencies
+RUN pip3 install --upgrade pip
+RUN pip3 install -r requirements.txt
+
 
 CMD ["bash"]
