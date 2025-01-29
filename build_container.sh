@@ -9,17 +9,19 @@ fi
 
 
 # Set ROS version
-AVAILABLE_ROS_DISTROS=("", "noetic")
+CONFIG_FILE="docker/ros-versions.yaml"
+AVAILABLE_ROS_DISTROS="$(yq '.ros_versions | keys | map(select(. != "default")) | join(" ")' "$CONFIG_FILE")"
 ROS_DISTRO=""
-if [ ! $# -eq 0 ]; then
+if [ $# -gt 0 ]; then
   ROS_DISTRO="$1"
-  if [[ ! " ${AVAILABLE_ROS_DISTROS[@]} " =~ " ${ROS_DISTRO} " ]]; then
+  if ! yq -e ".ros_versions | has(\"$ROS_DISTRO\")" "$CONFIG_FILE" > /dev/null 2>&1; then
     echo "Error: Invalid ROS distribution '${ROS_DISTRO}'."
-    echo "Available options: ${AVAILABLE_ROS_DISTROS[*]}"
+    echo "Available options: '' ${AVAILABLE_ROS_DISTROS}"
     exit 1
   fi
 fi
-echo "Using ROS distribution: $ROS_DISTRO"
+
+echo "Using ROS distribution: '${ROS_DISTRO}'"
 
 
 # Set cuda version
@@ -60,8 +62,10 @@ if [ -n "$ROS_DISTRO" ]; then
     OS_IMAGE_NAME="${OS_IMAGE_NAME}-$ROS_DISTRO"
 fi
 echo "Building OS image: $OS_IMAGE_NAME"
-docker build --build-arg BASE_IMAGE="$BASE_IMAGE" --build-arg ROS_DISTRO="$ROS_DISTRO" -f "docker/main.Dockerfile" -t "$OS_IMAGE_NAME" .
-
+docker build \
+    --build-arg BASE_IMAGE="$BASE_IMAGE" \
+    --build-arg ROS_DISTRO="$ROS_DISTRO" \
+    -f "docker/main.Dockerfile" -t "$OS_IMAGE_NAME" .
 
 
 # Build lib image
@@ -69,42 +73,25 @@ TAG=$(echo "$OS_IMAGE_NAME" | awk -F: '{print $2}')
 LIB_IMAGE_NAME="coloradar-tools:$TAG"
 echo "Building lib image: $LIB_IMAGE_NAME"
 
-CONFIG_FILE="docker/ros-versions.yaml"
 DOCKER_GCC_VERSION=$(yq ".ubuntu_versions.\"$UBUNTU_VERSION\".gcc" "$CONFIG_FILE" | tr -d '"')
 DOCKER_BOOST_VERSION=$(yq ".ubuntu_versions.\"$UBUNTU_VERSION\".boost" "$CONFIG_FILE" | tr -d '"')
 DOCKER_PCL_VERSION=$(yq ".ubuntu_versions.\"$UBUNTU_VERSION\".pcl" "$CONFIG_FILE" | tr -d '"')
 DOCKER_PYBIND_VERSION=$(yq ".ubuntu_versions.\"$UBUNTU_VERSION\".pybind" "$CONFIG_FILE" | tr -d '"')
 
-docker build --build-arg BASE_IMAGE=$OS_IMAGE_NAME --build-arg DOCKER_GCC_VERSION="$DOCKER_GCC_VERSION" --build-arg DOCKER_BOOST_VERSION="$DOCKER_BOOST_VERSION" --build-arg DOCKER_PCL_VERSION="$DOCKER_PCL_VERSION" --build-arg DOCKER_PYBIND_VERSION="$DOCKER_PYBIND_VERSION" -f "docker/tools.Dockerfile" -t "$LIB_IMAGE_NAME" .
+docker build \
+    --build-arg BASE_IMAGE=$OS_IMAGE_NAME \
+    --build-arg DOCKER_GCC_VERSION="$DOCKER_GCC_VERSION"  \
+    --build-arg DOCKER_BOOST_VERSION="$DOCKER_BOOST_VERSION" \
+    --build-arg DOCKER_PCL_VERSION="$DOCKER_PCL_VERSION" \
+    --build-arg DOCKER_PYBIND_VERSION="$DOCKER_PYBIND_VERSION" \
+    -f "docker/tools.Dockerfile" -t "$LIB_IMAGE_NAME" .
 
 
 # Create container
-COMMAND="docker run -it --name coloradar-tools"
-if [ -n "$CUDA_VERSION" ]; then
+COMMAND="docker run -it --rm --name coloradar-tools"
+if [ -n "$DOCKER_CUDA_VERSION" ]; then
     COMMAND="${COMMAND} --gpus all"
 fi
 COMMAND="${COMMAND} ${LIB_IMAGE_NAME} bash"
 echo "Run the command below to start the container. Add volumes via -v if necessary."
 echo "$COMMAND"
-
-
-
-#DOCKER_CACHE_SEED=$(date +%s)
-#export DOCKER_CACHE_SEED="$DOCKER_CACHE_SEED"
-#export ROS_BASE_IMAGE="$ROS_BASE_IMAGE"
-# docker compose -f coloradar_plus_processing_tools/docker-compose.yml build  --no-cache
-# docker compose -f coloradar_plus_processing_tools/docker-compose.yml up --detach
-#docker compose -f coloradar_plus_processing_tools/docker-compose.yml up --detach
-#if [ ! $? -eq 0 ]; then
-#    echo "Error: Failed to start the container."
-#    exit 1
-#fi
-
-# PYTHON
-#wget https://www.python.org/ftp/python/3.11.5/Python-3.11.5.tgz
-#tar xzf Python-3.11.5.tgz && \
-#cd Python-3.11.5 && \
-#    ./configure --enable-optimizations && \
-#    make -j$(nproc) && \
-#    make altinstall
-

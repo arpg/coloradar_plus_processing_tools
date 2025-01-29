@@ -15,7 +15,6 @@ RUN if [ -n "$DOCKER_GCC_VERSION" ]; then \
         update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-${DOCKER_GCC_VERSION} 100 && \
         update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-${DOCKER_GCC_VERSION} 100; \
     fi
-RUN apt install -y cmake
 RUN gcc --version && g++ --version && cmake --version
 
 
@@ -33,7 +32,7 @@ RUN if [ -n "$DOCKER_BOOST_VERSION" ]; then \
 
 
 # Other dependencies
-RUN apt install -y liboctomap-dev libgtest-dev libopencv-dev libopenmpi-dev openmpi-bin libjsoncpp-dev
+RUN apt install -y liboctomap-dev libgtest-dev libopencv-dev libopenmpi-dev openmpi-bin libjsoncpp-dev libdbus-1-dev gobject-introspection libgirepository1.0-dev
 
 
 # PCL
@@ -69,8 +68,10 @@ RUN rm -rf tmp/*
 
 
 # Datatset Tools
-COPY coloradar_tools /src/coloradar_tools
 WORKDIR /src/coloradar_tools
+COPY coloradar_tools/src src
+COPY coloradar_tools/tests tests
+COPY coloradar_tools/CMakeLists.txt .
 
 RUN mkdir build
 RUN cmake -B build
@@ -79,8 +80,14 @@ RUN ./build/coloradar_tests
 
 
 # Python dependencies
+COPY requirements.txt /tmp
 RUN pip3 install --upgrade pip
-RUN pip3 install -r requirements.txt
+RUN pip3 install --upgrade --ignore-installed -r /tmp/requirements.txt
+
+
+# Python Tools
+COPY coloradar_tools/scripts scripts
+COPY coloradar_tools/__init__.py coloradar_tools/demo.ipynb ./
 
 
 CMD ["bash"]
