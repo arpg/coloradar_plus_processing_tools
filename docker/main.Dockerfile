@@ -7,7 +7,7 @@ ENV LANG=C.UTF-8
 
 # Base OS
 RUN apt update && apt upgrade -y
-RUN apt install -y apt-utils wget lsb-release gnupg software-properties-common build-essential cmake python3-pip python3-venv
+RUN apt install -y apt-utils wget lsb-release gnupg software-properties-common build-essential cmake
 WORKDIR /tmp
 
 
