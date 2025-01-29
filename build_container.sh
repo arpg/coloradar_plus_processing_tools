@@ -73,10 +73,10 @@ TAG=$(echo "$OS_IMAGE_NAME" | awk -F: '{print $2}')
 LIB_IMAGE_NAME="coloradar-tools:$TAG"
 echo "Building lib image: $LIB_IMAGE_NAME"
 
-DOCKER_GCC_VERSION=$(yq ".ubuntu_versions.\"$UBUNTU_VERSION\".gcc" "$CONFIG_FILE" | tr -d '"')
-DOCKER_BOOST_VERSION=$(yq ".ubuntu_versions.\"$UBUNTU_VERSION\".boost" "$CONFIG_FILE" | tr -d '"')
-DOCKER_PCL_VERSION=$(yq ".ubuntu_versions.\"$UBUNTU_VERSION\".pcl" "$CONFIG_FILE" | tr -d '"')
-DOCKER_PYBIND_VERSION=$(yq ".ubuntu_versions.\"$UBUNTU_VERSION\".pybind" "$CONFIG_FILE" | tr -d '"')
+DOCKER_GCC_VERSION=$(yq -r ".ubuntu_versions.\"$UBUNTU_VERSION\".gcc // \"\"" "$CONFIG_FILE")
+DOCKER_BOOST_VERSION=$(yq -r ".ubuntu_versions.\"$UBUNTU_VERSION\".boost // \"\"" "$CONFIG_FILE")
+DOCKER_PCL_VERSION=$(yq -r ".ubuntu_versions.\"$UBUNTU_VERSION\".pcl // \"\"" "$CONFIG_FILE")
+DOCKER_PYBIND_VERSION=$(yq -r ".ubuntu_versions.\"$UBUNTU_VERSION\".pybind // \"\"" "$CONFIG_FILE")
 
 docker build \
     --build-arg BASE_IMAGE=$OS_IMAGE_NAME \

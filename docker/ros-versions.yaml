@@ -28,7 +28,7 @@ ubuntu_versions:
     # cmake: 3.17.5
   22.04:
     gcc: 12
-    boost:
+    boost: 1.78.0
     pcl:
     pybind:
   24.04:
