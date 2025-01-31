@@ -10,29 +10,45 @@ int main() {
 
     std::vector<octomath::Pose6D> gtPoses = run->getPoses<octomath::Pose6D>();
     std::vector<octomath::Pose6D> poses = run->interpolatePoses(gtPoses, run->poseTimestamps(), run->lidarTimestamps());
-    auto mapToBaseT = poses[100];
 
-    std::cout << "Original Points in Sensor Frame:\n";
-    for (int i = 0; i < 3; ++i) {
-        auto point = cloud[start + i];
-        std::cout << "(" << point.x() << ", " << point.y() << ", " << point.z() << ")\n";
-    }
-    std::cout << "bTs: (" << baseToLidarT.trans().x() << ", " << baseToLidarT.trans().y() << ", " << baseToLidarT.trans().z() << ")\n";
-    std::cout << "mTb: (" << mapToBaseT.trans().x() << ", " << mapToBaseT.trans().y() << ", " << mapToBaseT.trans().z() << ")\n";
-
-    auto mapToSensorT = mapToBaseT * baseToLidarT;
-    std::cout << "sensor origin in map: (" << mapToSensorT.trans().x() << ", " << mapToSensorT.trans().y() << ", " << mapToSensorT.trans().z() << ")\n";
-    cloud.transform(mapToSensorT);
-    std::cout << "Transformed Points in map frame:\n";
-    for (int i = 0; i < 3; ++i) {
-        auto point = cloud[start + i];
-        std::cout << "(" << point.x() << ", " << point.y() << ", " << point.z() << ")\n";
+    for (size_t i = 0; i < std::min(gtPoses.size(), static_cast<size_t>(5)); ++i) {
+        std::cout << "GT Pose " << i << ": "
+                  << gtPoses[i].x() << " "
+                  << gtPoses[i].y() << " "
+                  << gtPoses[i].z() << "\n";
     }
 
-    Eigen::Affine3f baseToMapT = coloradar::internal::toEigenPose(mapToBaseT).inverse();
-    Eigen::Affine3f sensorToBaseT = dataset.lidarTransform().inverse();
-    auto sensorToMapT = sensorToBaseT * baseToMapT;
-    std::cout << "sTm: (" << sensorToMapT.translation().x() << ", " << sensorToMapT.translation().y() << ", " << sensorToMapT.translation().z() << ")\n";
+    for (size_t i = 0; i < std::min(poses.size(), static_cast<size_t>(5)); ++i) {
+        std::cout << "Interpolated Pose " << i << ": "
+                  << poses[i].x() << " "
+                  << poses[i].y() << " "
+                  << poses[i].z() << "\n";
+    }
+
+
+//    auto mapToBaseT = poses[100];
+//
+//    std::cout << "Original Points in Sensor Frame:\n";
+//    for (int i = 0; i < 3; ++i) {
+//        auto point = cloud[start + i];
+//        std::cout << "(" << point.x() << ", " << point.y() << ", " << point.z() << ")\n";
+//    }
+//    std::cout << "bTs: (" << baseToLidarT.trans().x() << ", " << baseToLidarT.trans().y() << ", " << baseToLidarT.trans().z() << ")\n";
+//    std::cout << "mTb: (" << mapToBaseT.trans().x() << ", " << mapToBaseT.trans().y() << ", " << mapToBaseT.trans().z() << ")\n";
+//
+//    auto mapToSensorT = mapToBaseT * baseToLidarT;
+//    std::cout << "sensor origin in map: (" << mapToSensorT.trans().x() << ", " << mapToSensorT.trans().y() << ", " << mapToSensorT.trans().z() << ")\n";
+//    cloud.transform(mapToSensorT);
+//    std::cout << "Transformed Points in map frame:\n";
+//    for (int i = 0; i < 3; ++i) {
+//        auto point = cloud[start + i];
+//        std::cout << "(" << point.x() << ", " << point.y() << ", " << point.z() << ")\n";
+//    }
+//
+//    Eigen::Affine3f baseToMapT = coloradar::internal::toEigenPose(mapToBaseT).inverse();
+//    Eigen::Affine3f sensorToBaseT = dataset.lidarTransform().inverse();
+//    auto sensorToMapT = sensorToBaseT * baseToMapT;
+//    std::cout << "sTm: (" << sensorToMapT.translation().x() << ", " << sensorToMapT.translation().y() << ", " << sensorToMapT.translation().z() << ")\n";
 
     return 0;
 }

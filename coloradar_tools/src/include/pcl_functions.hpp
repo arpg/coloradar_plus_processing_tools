@@ -12,9 +12,12 @@ void coloradar::octreeToPcl(const octomap::OcTree& tree, CloudT<PointT>& cloud) 
         point.y = coords.y();
         point.z = coords.z();
         point.intensity = it->getLogOdds();
+        if (std::fmod(point.x, 0.25) != 0 || std::fmod(point.y, 0.25) != 0 || std::fmod(point.z, 0.25) != 0)
+            std::cout << "Warning: Non-centered voxel detected: " << point.x << ", " << point.y << ", " << point.z << std::endl;
         cloud.push_back(point);
     }
 }
+
 
 template <coloradar::PclPointType PointT, template <coloradar::PclCloudType> class CloudT>
 void coloradar::filterFov(CloudT<PointT>& cloud, const float& horizontalFov, const float& verticalFov, const float& range) {

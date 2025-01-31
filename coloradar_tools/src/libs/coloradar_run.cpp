@@ -189,6 +189,8 @@ octomap::OcTree coloradar::ColoradarPlusRun::buildLidarOctomap(
         cloud.transform(frameTransform);
         tree.insertPointCloud(cloud, frameTransform.trans());
     }
+    std::cout << "OctoMap Depth: " << tree.getTreeDepth() << std::endl;
+    std::cout << "OctoMap Resolution: " << tree.getResolution() << " meters" << std::endl;
     return tree;
 }
 

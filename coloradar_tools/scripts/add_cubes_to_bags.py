@@ -34,7 +34,7 @@ def add_heatmaps(radar_processor, bag_path, cube_topic='/cascade/data_cube', hea
         if heatmap_topic in bag.get_type_and_topic_info().topics:
             print(f"Skipping {bag_path}, heatmaps already exist.")
             return
-    return
+
     with rosbag.Bag(bag_path, 'a') as bag:
         for topic, cube_msg, t in tqdm(bag.read_messages(topics=[cube_topic])):
             heatmap_msg = HeatmapMsg(

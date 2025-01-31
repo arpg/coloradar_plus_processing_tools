@@ -82,7 +82,7 @@ RUN ./build/coloradar_tests
 # Python dependencies
 COPY requirements.txt /tmp
 RUN apt update && apt install -y python3-pip
-RUN pip3 install --break-system-packages --upgrade --ignore-installed -r /tmp/requirements.txt
+RUN pip3 install --upgrade --ignore-installed -r /tmp/requirements.txt
 
 
 # Python Tools

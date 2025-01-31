@@ -23,6 +23,7 @@ std::vector<PoseT> coloradar::ColoradarPlusRun::getPoses() {
         typename coloradar::PoseTraits<PoseT>::TranslationType translation(x, y, z);
         typename coloradar::PoseTraits<PoseT>::RotationType rotation(rotW, rotX, rotY, rotZ);
         PoseT pose = coloradar::internal::makePose<PoseT>(translation, rotation);
+        // std::cout << pose.translation().x() << " " << pose.translation().y() << " " << pose.translation().z();
         poses.push_back(pose);
     }
     return poses;

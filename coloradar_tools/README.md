@@ -14,7 +14,7 @@ apt install pybind11-dev
 #### 2. Build:
 ```bash
 mkdir build
-cmake -S coloradar_tools/src -B build
+cmake -S coloradar_tools -B build
 make -C build
 ```
 

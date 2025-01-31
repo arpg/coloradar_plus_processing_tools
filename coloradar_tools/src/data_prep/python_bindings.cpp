@@ -157,8 +157,8 @@ PYBIND11_MODULE(coloradar_dataset_tools, m) {
     // RadarConfig
     py::class_<coloradar::RadarConfig, std::shared_ptr<coloradar::RadarConfig>>(m, "RadarConfig")
         .def_readonly_static("c", &coloradar::RadarConfig::c)
-        .def_readonly("num_range_bins", &coloradar::RadarConfig::numPosRangeBins)
-        // .def_readonly("num_pos_range_bins", &coloradar::RadarConfig::numPosRangeBins)
+        .def_readonly("num_range_bins", &coloradar::RadarConfig::numRangeBins)
+        .def_readonly("num_pos_range_bins", &coloradar::RadarConfig::numPosRangeBins)
         .def_readonly("num_elevation_bins", &coloradar::RadarConfig::numElevationBins)
         .def_readonly("num_azimuth_bins", &coloradar::RadarConfig::numAzimuthBins)
         .def_readonly("range_bin_width", &coloradar::RadarConfig::rangeBinWidth)
@@ -241,39 +241,6 @@ PYBIND11_MODULE(coloradar_dataset_tools, m) {
         .def("interpolate_poses", [](coloradar::ColoradarPlusRun& self, const py::array_t<float>& poses_array, const std::vector<double>& pose_timestamps, const std::vector<double>& target_timestamps) {
             std::vector<Eigen::Affine3f> interpolated_poses = self.interpolatePoses<Eigen::Affine3f>(numpyToPoses(poses_array), pose_timestamps, target_timestamps); return posesToNumpy(interpolated_poses);
         }, py::arg("poses"), py::arg("pose_timestamps"), py::arg("target_timestamps"), "Interpolates poses and returns an Nx7 numpy array [x, y, z, qx, qy, qz, qw]");
-//        .def("export_to_file", [](
-//            coloradar::ColoradarPlusRun& self, const std::string& destination = "",
-//            const bool& includeCascadeHeatmaps = false, const bool& includeCascadePointclouds = false, const int& cascadeAzimuthMaxBin = -1, const int& cascadeElevationMaxBin = -1, const int& cascadeRangeMaxBin = -1,
-//            const bool& removeCascadeDopplerDim = false, const bool& collapseCascadeElevation = false, const int& collapseCascadeElevationMinZ = -100, const int& collapseCascadeElevationMaxZ = 100, const float& cascadeCloudIntensityThresholdPercent = 0.0f,
-//            const bool& includeLidarFrames = false, const float& lidarFrameTotalHorizontalFov = 360.0f, const float& lidarFrameTotalVerticalFov = 180.0f, const float& lidarFrameMaxRange = 100.0f,
-//            const bool& collapseLidarFrameElevation = false, const float& collapseLidarFrameElevationMinZ = -100.0f, const float& collapseLidarFrameElevationMaxZ = 100.0f,
-//            const bool& includeLidarMap = false, const bool& collapseMapElevation = false, const float& collapseMapElevationMinZ = -100.0f, const float& collapseMapElevationMaxZ = 100.0f,
-//            const bool& includeMapFrames = false, const float& mapSampleTotalHorizontalFov = 360.0f, const float& mapSampleTotalVerticalFov = 180.0f, const float& mapSampleMaxRange = 100.0f,
-//            const py::array_t<float>& mapSamplingPreTransformArray = poseToNumpy(Eigen::Affine3f::Identity()), const py::array_t<float>& mapSamplingPosesArray = py::none(),
-//            const bool& collapseMapSampleElevation = false, const float& collapseMapSampleElevationMinZ = -100.0f, const float& collapseMapSampleElevationMaxZ = 100.0f,
-//            const bool& removeLidarIntensity = false,
-//            const bool& includeTruePoses = true, const bool& includeCascadePoses = true, const bool& includeLidarPoses = true,
-//            const bool& includeTrueTimestamps = true, const bool& includeCascadeTimestamps = true, const bool& includeLidarTimestamps = true) {
-//                auto mapSamplingPreTransform = numpyToPose(mapSamplingPreTransformArray);
-//                auto mapSamplingPoses = isNumpyArrayEmpty(mapSamplingPosesArray) ? std::vector<Eigen::Affine3f>{} : numpyToPoses(mapSamplingPosesArray);
-//                return self.exportToFile(
-//                    destination, includeCascadeHeatmaps, includeCascadePointclouds, cascadeAzimuthMaxBin, cascadeElevationMaxBin, cascadeRangeMaxBin, removeCascadeDopplerDim, collapseCascadeElevation, collapseCascadeElevationMinZ, collapseCascadeElevationMaxZ, cascadeCloudIntensityThresholdPercent,
-//                    includeLidarFrames, lidarFrameTotalHorizontalFov, lidarFrameTotalVerticalFov, lidarFrameMaxRange, collapseLidarFrameElevation, collapseLidarFrameElevationMinZ, collapseLidarFrameElevationMaxZ,
-//                    includeLidarMap, collapseMapElevation, collapseMapElevationMinZ, collapseMapElevationMaxZ, includeMapFrames, mapSampleTotalHorizontalFov, mapSampleTotalVerticalFov, mapSampleMaxRange, mapSamplingPreTransform, mapSamplingPoses, collapseMapSampleElevation, collapseMapSampleElevationMinZ, collapseMapSampleElevationMaxZ,
-//                    includeTruePoses, includeCascadePoses, includeLidarPoses, includeTrueTimestamps, includeCascadeTimestamps, includeLidarTimestamps
-//                );
-//            }, py::arg("destination") = "", py::arg("include_cascade_heatmaps") = false, py::arg("include_cascade_pointclouds") = false, py::arg("cascade_azimuth_max_bin") = -1, py::arg("cascade_elevation_max_bin") = -1, py::arg("cascade_range_max_bin") = -1,
-//            py::arg("remove_cascade_doppler_dim") = false, py::arg("collapse_cascade_elevation") = false, py::arg("collapse_cascade_elevation_min_z") = -100, py::arg("collapse_cascade_elevation_max_z") = 100, py::arg("cascade_cloud_intensity_threshold_percent") = 0.0f,
-//            py::arg("include_lidar_frames") = false, py::arg("lidar_frame_total_horizontal_fov") = 360.0f, py::arg("lidar_frame_total_vertical_fov") = 180.0f, py::arg("lidar_frame_max_range") = 100.0f,
-//            py::arg("collapse_lidar_frame_elevation") = false, py::arg("collapse_lidar_frame_elevation_min_z") = -100.0f, py::arg("collapse_lidar_frame_elevation_max_z") = 100.0f,
-//            py::arg("include_lidar_map") = false, py::arg("collapse_map_elevation") = false, py::arg("collapse_map_elevation_min_z") = -100.0f, py::arg("collapse_map_elevation_max_z") = 100.0f,
-//            py::arg("include_map_frames") = false, py::arg("map_sample_total_horizontal_fov") = 360.0f, py::arg("map_sample_total_vertical_fov") = 180.0f, py::arg("map_sample_max_range") = 100.0f,
-//            py::arg("map_sampling_pre_transform") = poseToNumpy(Eigen::Affine3f::Identity()), py::arg("map_sampling_poses") = py::none(),
-//            py::arg("collapse_map_sample_elevation") = false, py::arg("collapse_map_sample_elevation_min_z") = -100.0f, py::arg("collapse_map_sample_elevation_max_z") = 100.0f,
-//            py::arg("remove_lidar_intensity") = false,
-//            py::arg("include_true_poses") = true, py::arg("include_cascade_poses") = true, py::arg("include_lidar_poses") = true,
-//            py::arg("include_true_timestamps") = true, py::arg("include_cascade_timestamps") = true, py::arg("include_lidar_timestamps") = true
-//        );
 
     // ColoradarRun
     py::class_<coloradar::ColoradarRun, coloradar::ColoradarPlusRun>(m, "ColoradarRun")

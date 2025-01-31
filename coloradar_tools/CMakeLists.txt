@@ -24,6 +24,17 @@ set(PYBIND11_INCLUDEDIR "/usr/local/include")
 set(PYBIND11_LIBRARYDIR "/usr/local/lib")
 
 
+find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
+if(DEFINED ENV{VIRTUAL_ENV})
+    set(VENV_PYTHON "$ENV{VIRTUAL_ENV}/bin/python3")
+    if(EXISTS ${VENV_PYTHON})
+        message(STATUS "Virtual environment detected: $ENV{VIRTUAL_ENV}")
+        set(Python_EXECUTABLE ${VENV_PYTHON} CACHE FILEPATH "Python interpreter from active virtual environment" FORCE)
+    endif()
+endif()
+message(STATUS "Using Python: ${Python_EXECUTABLE} (${Python_VERSION})")
+
+
 find_package(Boost 1.78 REQUIRED COMPONENTS system filesystem thread)
 find_package(MPI REQUIRED)
 # find_package(VTK COMPONENTS mpi REQUIRED)
@@ -34,6 +45,7 @@ find_package(OpenCV REQUIRED)
 find_package(CUDA)
 find_package(HDF5 REQUIRED COMPONENTS C CXX)
 find_package(pybind11 2.6)
+
 
 set(CUDA_LIBS ${CUDA_LIBRARIES} ${CUDA_CUFFT_LIBRARIES})
 # include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
@@ -55,7 +67,6 @@ target_link_libraries(coloradar_tools ${PCL_LIBRARIES} ${OCTOMAP_LIBRARIES} ${HD
 
 if(pybind11_FOUND)
     message(STATUS "Pybind11 found, compiling Python bindings.")
-    find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
     pybind11_add_module(coloradar_dataset_tools src/data_prep/python_bindings.cpp)
     target_link_libraries(coloradar_dataset_tools PRIVATE coloradar_tools)
 else()
@@ -94,8 +105,8 @@ target_link_libraries(coloradar_tests coloradar_tools gtest gtest_main pthread)
 
 ### SCRIPTS
 
-# add_executable(test src/data_prep/test.cpp)
-# target_link_libraries(test coloradar_tools)
+add_executable(test src/data_prep/test.cpp)
+target_link_libraries(test coloradar_tools)
 
 # add_executable(interpolate_poses_for_lidar src/data_prep/interpolate_poses_for_lidar.cpp)
 # target_link_libraries(interpolate_poses_for_lidar coloradar_tools)
