@@ -39,15 +39,15 @@ def add_heatmaps(radar_processor, bag_path, cube_topic='/cascade/data_cube', hea
         for topic, cube_msg, t in tqdm(bag.read_messages(topics=[cube_topic])):
             heatmap_msg = HeatmapMsg(
                 header=cube_msg.header,
-                depth=radar_processor.config.numPosRangeBins,
-                height=radar_processor.config.numElevationBeams,
-                width=radar_processor.config.numAzimuthBeams,
-                num_doppler_bins=radar_processor.config.numDopplerBins,
-                range_bin_width=radar_processor.config.rangeBinWidth,
-                doppler_bin_width=radar_processor.config.dopplerBinWidth,
-                azimuth_bins=radar_processor.config.azimuthBins,
-                elevation_bins=radar_processor.config.elevationBins,
-                image=radar_processor.cubeToHeatmap(cube_msg.samples)
+                depth=radar_processor.config.num_pos_range_bins,
+                height=radar_processor.config.num_elevation_beams,
+                width=radar_processor.config.num_azimuth_beams,
+                num_doppler_bins=radar_processor.config.num_doppler_bins,
+                range_bin_width=radar_processor.config.range_bin_width,
+                doppler_bin_width=radar_processor.config.doppler_bin_width,
+                azimuth_bins=radar_processor.config.azimuth_bins,
+                elevation_bins=radar_processor.config.elevation_bins,
+                image=radar_processor.cube_to_heatmap(cube_msg.samples)
             )
             bag.write(heatmap_topic, heatmap_msg, t)
 

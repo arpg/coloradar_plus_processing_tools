@@ -204,16 +204,6 @@ void saveCloudToHDF5(const std::string& name, H5::H5File& file, const std::vecto
     }
 }
 
-//void saveCloudsToHDF5(const std::string& name, H5::H5File& file, const std::vector<float>& flatClouds, const int& numFrames, const int& numDims, const std::vector<hsize_t>& cloudSizes) {
-//    int numPoints = flatClouds.size() / numFrames / numDims;
-//    hsize_t dims[3] = {numFrames, numPoints, numDims};
-//    H5::DataSpace dataspace(3, dims);
-//    H5::PredType datatype = H5::PredType::NATIVE_FLOAT;
-//    H5::DataSet dataset = file.createDataSet(name, datatype, dataspace);
-//    if (numPoints > 0) {
-//        dataset.write(flatClouds.data(), H5::PredType::NATIVE_FLOAT);
-//    }
-//}
 
 void saveCloudsToHDF5(const std::string& name, H5::H5File& file, const std::vector<float>& flatClouds, const size_t& numFrames, const int& numDims, const std::vector<hsize_t>& cloudSizes) {
     if (cloudSizes.size() != numFrames) {
@@ -484,100 +474,6 @@ std::filesystem::path coloradar::ColoradarPlusDataset::exportToFile(
 
     return destinationAbs;
 }
-// {
-//    if (runs.empty()) {
-//        runs = getRuns();
-//    }
-//    if (destination.empty()) {
-//        destination = "dataset_" + std::to_string(std::time(nullptr)) + ".h5";
-//    }
-//    std::filesystem::path destinationAbs = std::filesystem::absolute(destination);
-//    H5::H5File datasetFile(destinationAbs, H5F_ACC_TRUNC);
-//    Json::Value finalConfig;
-//    finalConfig["runs"] = Json::arrayValue;
-//    finalConfig["data_dimensions"] = Json::Value(Json::objectValue);
-//
-//    for (auto* run : runs) {
-//        finalConfig["runs"].append(run->name);
-//        std::cout << "Exporting run: " << run->name << std::endl;
-//        std::filesystem::path runFile = run->exportToFile("", includeCascadeHeatmaps, includeCascadePointclouds,
-//            cascadeAzimuthMaxBin, cascadeElevationMaxBin, cascadeRangeMaxBin, removeCascadeDopplerDim, collapseCascadeElevation, collapseCascadeElevationMinZ, collapseCascadeElevationMaxZ, cascadeCloudIntensityThresholdPercent,
-//            includeLidarFrames, lidarFrameTotalHorizontalFov, lidarFrameTotalVerticalFov, lidarFrameMaxRange, collapseLidarFrameElevation, collapseLidarFrameElevationMinZ, collapseLidarFrameElevationMaxZ,
-//            includeLidarMap, collapseMapElevation, collapseMapElevationMinZ, collapseMapElevationMaxZ,
-//            includeMapFrames, mapSampleTotalHorizontalFov, mapSampleTotalVerticalFov, mapSampleMaxRange, mapSamplingPreTransform, mapSamplingPoses, collapseMapSampleElevation, collapseMapSampleElevationMinZ, collapseMapSampleElevationMaxZ,
-//            removeLidarIntensity,
-//            includeTruePoses, includeCascadePoses, includeLidarPoses,
-//            includeTrueTimestamps, includeCascadeTimestamps, includeLidarTimestamps
-//        );
-//
-//        H5::H5File runFileHandle(runFile, H5F_ACC_RDONLY);
-//        Json::Value runConfig;
-//        H5::DataSet configDataset = runFileHandle.openDataSet("config");
-//        H5::DataSpace configSpace = configDataset.getSpace();
-//        hsize_t configSize;
-//        configSpace.getSimpleExtentDims(&configSize);
-//        std::vector<char> configBuffer(configSize);
-//        configDataset.read(configBuffer.data(), H5::PredType::C_S1);
-//        std::istringstream configStream(std::string(configBuffer.begin(), configBuffer.end()));
-//
-//        configStream >> runConfig;
-//        auto& dataContent = runConfig["data_content"];
-//        auto& dataDimensions = runConfig["data_dimensions"];
-//        finalConfig["data_content"] = runConfig["data_content"];
-//        finalConfig["data_settings"] = runConfig["data_settings"];
-//        finalConfig["data_dimensions"][run->name] = dataDimensions;
-//        if (runConfig.isMember("radar_config")) {
-//            finalConfig["radar_config"] = runConfig["radar_config"];
-//        }
-//
-//        for (const auto& contentType : dataContent) {
-//            std::string contentName = contentType.asString();
-//            if (dataDimensions.isMember(contentName)) {
-//                int numFrames = dataDimensions[contentName]["num_frames"].asInt();
-//                std::vector<float> contentData;
-//                for (int i = 0; i < numFrames; ++i) {
-//                    std::string datasetName = contentName + "_" + std::to_string(i);
-//                    H5::DataSet dataset = runFileHandle.openDataSet(datasetName);
-//                    H5::DataSpace space = dataset.getSpace();
-//                    std::vector<hsize_t> dims(space.getSimpleExtentNdims());
-//                    space.getSimpleExtentDims(dims.data());
-//                    size_t frameSize = std::accumulate(dims.begin(), dims.end(), 1, std::multiplies<hsize_t>());
-//                    std::vector<float> frameData(frameSize);
-//                    dataset.read(frameData.data(), H5::PredType::NATIVE_FLOAT);
-//                    contentData.insert(contentData.end(), frameData.begin(), frameData.end());
-//                }
-//                std::vector<hsize_t> totalDims = {static_cast<hsize_t>(runs.size())};
-//                for (auto dim : dataDimensions[contentName]["shape"]) {
-//                    totalDims.push_back(dim.asUInt());
-//                }
-//                H5::DataSpace dataspace(totalDims.size(), totalDims.data());
-//                H5::DataSet outputDataset = datasetFile.createDataSet(contentName + "_" + run->name, H5::PredType::NATIVE_FLOAT, dataspace);
-//                outputDataset.write(contentData.data(), H5::PredType::NATIVE_FLOAT);
-//            } else {
-//                std::string datasetName = contentName + "_" + run->name;
-//                H5::DataSet inputDataset = runFileHandle.openDataSet(contentName);
-//                H5::DataSpace inputSpace = inputDataset.getSpace();
-//                std::vector<hsize_t> dims(inputSpace.getSimpleExtentNdims());
-//                inputSpace.getSimpleExtentDims(dims.data());
-//                size_t dataSize = std::accumulate(dims.begin(), dims.end(), 1, std::multiplies<hsize_t>());
-//                std::vector<float> buffer(dataSize);
-//                inputDataset.read(buffer.data(), H5::PredType::NATIVE_FLOAT);
-//                H5::DataSpace outputSpace(dims.size(), dims.data());
-//                H5::DataSet outputDataset = datasetFile.createDataSet(datasetName, H5::PredType::NATIVE_FLOAT, outputSpace);
-//                outputDataset.write(buffer.data(), H5::PredType::NATIVE_FLOAT);
-//            }
-//        }
-//
-//        std::filesystem::remove(runFile);
-//    }
-//    std::string configString = Json::writeString(Json::StreamWriterBuilder(), finalConfig);
-//    H5::StrType strType(H5::PredType::C_S1, H5T_VARIABLE);
-//    H5::DataSpace dataspace(H5S_SCALAR);
-//    H5::DataSet configDataset = datasetFile.createDataSet("config", strType, dataspace);
-//    configDataset.write(configString, strType);
-//
-//    return destinationAbs;
-//}
 
 
 coloradar::ColoradarDataset::ColoradarDataset(const std::filesystem::path& pathToDataset) {

@@ -37,9 +37,8 @@ bool isNumpyArrayEmpty(const py::array_t<float>& array) {
     return false;
 }
 
-
 py::array_t<float> poseToNumpy(const Eigen::Affine3f& pose) {
-    py::array_t<float> result({7});
+    py::array_t<float> result(py::array_t<float>::ShapeContainer({static_cast<py::ssize_t>(7)}));
     auto result_buffer = result.mutable_unchecked<1>();
     result_buffer(0) = pose.translation().x();
     result_buffer(1) = pose.translation().y();
@@ -49,6 +48,23 @@ py::array_t<float> poseToNumpy(const Eigen::Affine3f& pose) {
     result_buffer(4) = quaternion.y();
     result_buffer(5) = quaternion.z();
     result_buffer(6) = quaternion.w();
+    return result;
+}
+
+py::array_t<float> posesToNumpy(const std::vector<Eigen::Affine3f>& poses) {
+    py::array_t<float> result(py::array_t<float>::ShapeContainer({static_cast<long int>(poses.size()), 7}));
+    auto result_buffer = result.mutable_unchecked<2>();
+    for (size_t i = 0; i < poses.size(); ++i) {
+        const auto& pose = poses[i];
+        result_buffer(i, 0) = pose.translation().x();
+        result_buffer(i, 1) = pose.translation().y();
+        result_buffer(i, 2) = pose.translation().z();
+        Eigen::Quaternionf quaternion(pose.rotation());
+        result_buffer(i, 3) = quaternion.x();
+        result_buffer(i, 4) = quaternion.y();
+        result_buffer(i, 5) = quaternion.z();
+        result_buffer(i, 6) = quaternion.w();
+    }
     return result;
 }
 
@@ -63,20 +79,6 @@ Eigen::Affine3f numpyToPose(const py::array_t<float>& array) {
     pose.translate(translation);
     pose.rotate(rotation);
     return pose;
-}
-
-py::array_t<float> posesToNumpy(const std::vector<Eigen::Affine3f>& poses) {
-    py::array_t<float>::ShapeContainer shape({static_cast<long int>(poses.size()), 7});
-    py::array_t<float> result(shape);
-    auto result_buffer = result.mutable_unchecked<2>();
-    for (size_t i = 0; i < poses.size(); ++i) {
-        py::array_t<float> single_pose = poseToNumpy(poses[i]);
-        auto single_pose_data = single_pose.unchecked<1>();
-        for (size_t j = 0; j < 7; ++j) {
-            result_buffer(i, j) = single_pose_data(j);
-        }
-    }
-    return result;
 }
 
 std::vector<Eigen::Affine3f> numpyToPoses(const py::array_t<float>& array) {

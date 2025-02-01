@@ -7,23 +7,6 @@ import numpy as np
 from scipy.spatial.transform import Rotation
 
 
-# def read_h5_dataset(file_path):
-#     data_dict = {}
-#     with h5py.File(file_path, 'r') as f:
-#         config = json.loads(f['config'][()])
-#         data_content = config.get('data_content', [])
-#         runs = config.get('runs', [])
-#         for content in data_content:
-#             data_dict[content] = {}
-#             for run in runs:
-#                 dataset_name = f"{content}_{run}"
-#                 if dataset_name in f:
-#                     data_dict[content][run] = f[dataset_name][:]
-#                 else:
-#                     print(f"Dataset {dataset_name} not found in the file.")
-#     return data_dict
-
-
 def read_h5_dataset(file_path):
     data_dict = {}
     with h5py.File(file_path, 'r') as f:
@@ -74,8 +57,8 @@ def radar_bins_to_fov(radar_config, azimuth_fov_idx, elevation_fov_idx, range_bi
         raise ValueError(f'Select azimuth FOV from 0 to {radar_config.num_elevation_bins // 2 - 1}')
     # if not 0 < range_meters <= max_range:
     #     raise ValueError(f'Select max range from 0 to {max_range}')
-    if not 0 <= range_bin_idx < radar_config.num_range_bins:
-        raise ValueError(f'Select range bin from 0 to {radar_config.num_range_bins}')
+    if not 0 <= range_bin_idx < radar_config.num_pos_range_bins:
+        raise ValueError(f'Select range bin from 0 to {radar_config.num_pos_range_bins}')
     azimuth_fov_degrees = np.round(np.degrees(-radar_config.azimuth_bins[radar_config.num_azimuth_bins // 2 - 1 - azimuth_fov_idx]), 1)
     elevation_fov_degrees = np.round(np.degrees(-radar_config.elevation_bins[radar_config.num_elevation_bins // 2 - 1 - elevation_fov_idx]), 1)
     range_meters = np.round(radar_config.range_bin_width * (range_bin_idx + 1), 2)
@@ -102,19 +85,6 @@ def show_occupancy_pcl(cloud, prob_threshold=0):
     pcd.colors = o3d.utility.Vector3dVector(colors)
     axes = o3d.geometry.TriangleMesh.create_coordinate_frame(size=5.0)
     o3d.visualization.draw_geometries([pcd, axes])
-
-def show_radar_pcl(cloud, intensity_threshold_percent=0.0):
-    min_intensity = np.min(cloud[:, 3])
-    max_intensity = np.max(cloud[:, 3])
-    normalized_intensities = (cloud[:, 3] - min_intensity) / (max_intensity - min_intensity)
-    filtered_idx = normalized_intensities >= intensity_threshold_percent / 100
-    cmap = plt.get_cmap("plasma")
-    colors = cmap(normalized_intensities[filtered_idx])[:, :3]
-    pcd = o3d.geometry.PointCloud()
-    pcd.points = o3d.utility.Vector3dVector(cloud[:, :3][filtered_idx])
-    pcd.colors = o3d.utility.Vector3dVector(colors)
-    axes = o3d.geometry.TriangleMesh.create_coordinate_frame(size=3.0)
-    o3d.visualization.draw_geometries([pcd, axes], "Radar Point Cloud Visualization")
 
 
 def plot_poses(timestamps, poses, timestamps_interpolated, poses_interpolated, device_name='device'):
@@ -216,3 +186,45 @@ def plot_rotations(gt, other, gt_ts, other_ts, title, label):
 
     plt.tight_layout()
     plt.show()
+
+
+def show_heatmap(heatmap, radar_config, intensity_threshold_percent=0.0):
+    cloud = image_to_pcl(heatmap, radar_config)
+    show_radar_pcl(cloud, intensity_threshold_percent=intensity_threshold_percent)
+
+
+def show_radar_pcl(cloud, intensity_threshold_percent=0.0):
+    min_intensity = np.min(cloud[:, 3])
+    max_intensity = np.max(cloud[:, 3])
+    normalized_intensities = (cloud[:, 3] - min_intensity) / (max_intensity - min_intensity)
+    filtered_idx = normalized_intensities >= intensity_threshold_percent / 100
+    cmap = plt.get_cmap("plasma")
+    colors = cmap(normalized_intensities[filtered_idx])[:, :3]
+    pcd = o3d.geometry.PointCloud()
+    pcd.points = o3d.utility.Vector3dVector(cloud[:, :3][filtered_idx])
+    pcd.colors = o3d.utility.Vector3dVector(colors)
+    axes = o3d.geometry.TriangleMesh.create_coordinate_frame(size=3.0)
+    o3d.visualization.draw_geometries([pcd, axes], "Radar Point Cloud Visualization")
+
+
+def image_to_pcl(image, radar_config):
+    azimuths = np.array(radar_config.azimuth_bins)
+    ranges = np.linspace(0, radar_config.num_pos_range_bins * radar_config.range_bin_width, radar_config.num_pos_range_bins)
+    elevations = np.array(radar_config.elevation_bins)
+    azimuths_grid, ranges_grid, elevations_grid = np.meshgrid(azimuths, ranges, elevations, indexing="ij")
+
+    cos_azimuths = np.cos(azimuths_grid)
+    sin_azimuths = np.sin(azimuths_grid)
+    cos_elevations = np.cos(elevations_grid)
+    sin_elevations = np.sin(elevations_grid)
+
+    x = ranges_grid * cos_elevations * sin_azimuths
+    y = ranges_grid * cos_elevations * cos_azimuths
+    z = ranges_grid * sin_elevations
+    x_flat = x.flatten()[:, np.newaxis]
+    y_flat = y.flatten()[:, np.newaxis]
+    z_flat = z.flatten()[:, np.newaxis]
+
+    intensity = image.flatten()[:, np.newaxis]
+    cartesian_points = np.concatenate((x_flat, y_flat, z_flat, intensity), axis=1)
+    return cartesian_points

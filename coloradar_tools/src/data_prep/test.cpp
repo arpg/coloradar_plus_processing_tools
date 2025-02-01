@@ -8,21 +8,21 @@ int main() {
     coloradar::OctoPointcloud cloud = run->getLidarPointCloud<coloradar::OctoPointcloud>(100);
     auto baseToLidarT = coloradar::internal::fromEigenPose<octomath::Pose6D>(dataset.lidarTransform());
 
-    std::vector<octomath::Pose6D> gtPoses = run->getPoses<octomath::Pose6D>();
-    std::vector<octomath::Pose6D> poses = run->interpolatePoses(gtPoses, run->poseTimestamps(), run->lidarTimestamps());
+    std::vector<Eigen::Affine3f> gtPoses = run->getPoses<Eigen::Affine3f>();
+    std::vector<Eigen::Affine3f> poses = run->interpolatePoses(gtPoses, run->poseTimestamps(), run->lidarTimestamps());
 
     for (size_t i = 0; i < std::min(gtPoses.size(), static_cast<size_t>(5)); ++i) {
         std::cout << "GT Pose " << i << ": "
-                  << gtPoses[i].x() << " "
-                  << gtPoses[i].y() << " "
-                  << gtPoses[i].z() << "\n";
+                  << gtPoses[i].translation().x() << " "
+                  << gtPoses[i].translation().y() << " "
+                  << gtPoses[i].translation().z() << "\n";
     }
 
     for (size_t i = 0; i < std::min(poses.size(), static_cast<size_t>(5)); ++i) {
         std::cout << "Interpolated Pose " << i << ": "
-                  << poses[i].x() << " "
-                  << poses[i].y() << " "
-                  << poses[i].z() << "\n";
+                  << poses[i].translation().x() << " "
+                  << poses[i].translation().y() << " "
+                  << poses[i].translation().z() << "\n";
     }
 
 
