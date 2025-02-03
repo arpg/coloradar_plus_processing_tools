@@ -6,8 +6,13 @@ ENV LANG=C.UTF-8
 
 
 # Base OS
+RUN UBUNTU_CODENAME=$(grep -oP '(?<=UBUNTU_CODENAME=)\w+' /etc/os-release) && \
+    echo "deb http://archive.ubuntu.com/ubuntu ${UBUNTU_CODENAME} main restricted universe multiverse" > /etc/apt/sources.list && \
+    echo "deb http://archive.ubuntu.com/ubuntu ${UBUNTU_CODENAME}-updates main restricted universe multiverse" >> /etc/apt/sources.list && \
+    echo "deb http://archive.ubuntu.com/ubuntu ${UBUNTU_CODENAME}-backports main restricted universe multiverse" >> /etc/apt/sources.list && \
+    echo "deb http://security.ubuntu.com/ubuntu ${UBUNTU_CODENAME}-security main restricted universe multiverse" >> /etc/apt/sources.list
 RUN apt update && apt upgrade -y
-RUN apt install -y apt-utils wget lsb-release gnupg software-properties-common build-essential cmake
+RUN apt install --fix-missing -y apt-utils wget lsb-release gnupg software-properties-common build-essential cmake
 WORKDIR /tmp
 
 
@@ -28,13 +33,15 @@ RUN if [ -n "$ROS_DISTRO" ]; then \
     wget -O - https://raw.githubusercontent.com/ros/rosdistro/master/ros.key | apt-key add - && \
     if [ "$ROS_DISTRO" = "noetic" ]; then \
         echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main" > /etc/apt/sources.list.d/ros-latest.list; \
-        apt update && apt install -y ros-${ROS_DISTRO}-desktop-full python3-rosdep python3-rosbag python3-catkin-tools; \
     else \
         echo "deb http://packages.ros.org/ros2/ubuntu $(lsb_release -sc) main" > /etc/apt/sources.list.d/ros2-latest.list; \
-        apt update && apt install -y ros-${ROS_DISTRO}-desktop python3-rosdep python3-colcon-common-extensions; \
     fi && \
+    apt update && apt install -y ros-${ROS_DISTRO}-desktop-full ros-${ROS_DISTRO}-catkin; \
+    apt install -y python3-rosbag python3-rosdep python3-colcon-common-extensions python3-catkin-tools python3-osrf-pycommon; \
     rosdep init && \
     rosdep update && \
+    source /opt/ros/${ROS_DISTRO}/setup.bash; \
+    catkin config --extend /opt/ros/$ROS_DISTRO; \
     echo "source /opt/ros/${ROS_DISTRO}/setup.bash" >> ~/.bashrc; \
 fi
 

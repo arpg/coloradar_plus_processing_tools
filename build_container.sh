@@ -66,6 +66,9 @@ docker build \
     --build-arg BASE_IMAGE="$BASE_IMAGE" \
     --build-arg ROS_DISTRO="$ROS_DISTRO" \
     -f "docker/main.Dockerfile" -t "$OS_IMAGE_NAME" .
+if [ $? -ne 0 ]; then
+    exit 1
+fi
 
 
 # Build lib image

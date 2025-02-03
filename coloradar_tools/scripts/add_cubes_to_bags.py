@@ -22,11 +22,28 @@ import coloradar_cuda_tools as cuda_tools
 
 
 
-HeatmapMsg = namedtuple("HeatmapMsg", [
-    "header", "depth", "height", "width", "num_doppler_bins",
-    "range_bin_width", "doppler_bin_width", "azimuth_bins",
-    "elevation_bins", "image"
-])
+# HeatmapMsg = namedtuple("HeatmapMsg", [
+#     "header", "depth", "height", "width", "num_doppler_bins",
+#     "range_bin_width", "doppler_bin_width", "azimuth_bins",
+#     "elevation_bins", "image"
+# ])
+
+class HeatmapMsg:
+    _type = "dca1000_device/MimoMsg"
+
+    def __init__(self, header, depth, height, width, num_doppler_bins,
+                 range_bin_width, doppler_bin_width, azimuth_bins,
+                 elevation_bins, image):
+        self.header = header
+        self.depth = depth
+        self.height = height
+        self.width = width
+        self.num_doppler_bins = num_doppler_bins
+        self.range_bin_width = range_bin_width
+        self.doppler_bin_width = doppler_bin_width
+        self.azimuth_bins = azimuth_bins
+        self.elevation_bins = elevation_bins
+        self.image = image
 
 
 def add_heatmaps(radar_processor, bag_path, cube_topic='/cascade/data_cube', heatmap_topic='/cascade/heatmap'):
