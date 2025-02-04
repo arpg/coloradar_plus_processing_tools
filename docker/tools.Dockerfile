@@ -92,8 +92,7 @@ COPY coloradar_tools/__init__.py coloradar_tools/demo.ipynb ./
 
 WORKDIR /catkin_ws
 RUN mkdir src
-COPY dca1000_device_msgs /catkin_ws/src/msgs
-RUN catkin init && catkin build
+COPY dca1000_device /catkin_ws/src/msgs
 
 
 CMD ["bash"]
