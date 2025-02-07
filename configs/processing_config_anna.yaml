@@ -1,10 +1,10 @@
 # ColoradarPlus Processing Configuration
 
-main_bag_directory_path: "/root/bags/WITH_GT"
-main_kitti_directory_path: "/root/coloradar_plus/kitti"
+main_bag_directory_path: "/root/coloradar_plus"
+main_kitti_directory_path: "/root/coloradar_plus/bin_dataset/kitti"
 generate_sequence_run_stats: true
 display_rosbag_data: false
 
 sequences:
   bike_path:
-    runs: [0, 1, 2, 3]
+    runs: [2_liosam]

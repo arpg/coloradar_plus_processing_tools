@@ -56,7 +56,7 @@ include_directories(${PROJECT_SOURCE_DIR}/src/include ${Boost_INCLUDE_DIRS} ${PC
 
 add_library(coloradar_tools SHARED
     src/libs/internal.cpp
-    src/libs/configs.cpp
+    src/libs/radar_configs.cpp
     src/libs/pcl_functions.cpp
     src/libs/octo_pointcloud.cpp
     src/libs/coloradar_run.cpp

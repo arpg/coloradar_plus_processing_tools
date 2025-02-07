@@ -6,8 +6,10 @@ np.set_printoptions(suppress=True)
 from array import array
 import rosbag
 from sensor_msgs.msg import CameraInfo
-import json 
+import json
+import cv2
 from coloradar_plus_processing_tools import utils
+
 
 class BagParser:
     def __init__(self, log_paths_dict):
@@ -26,7 +28,7 @@ class BagParser:
         self.camera_rgb_info_topic = '/camera/color/camera_info'
         self.cascade_datacube_topic = "/cascade/data_cube"
         self.cascade_heatmap_topic = "/cascade/heatmap"
-        # self.transforms_topic = "/tf"
+        self.transforms_topic = "/tf"
         self.static_transforms_topic = "/tf_static"
 
         
@@ -47,11 +49,11 @@ class BagParser:
         }
 
         # Initialize number of data to 1 so that it corresponds with line in timestamp text file
-        self.lidar_pc_num = 1
-        self.camera_rgb_num = 1
-        self.camera_depth_num = 1
-        self.cascade_heatmap_num = 1
-        self.cascade_datacube_num = 1
+        self.lidar_pc_num = 0
+        self.camera_rgb_num = 0
+        self.camera_depth_num = 0
+        self.cascade_heatmap_num = 0
+        self.cascade_datacube_num = 0
 
         # Initilize tfs
         self.base_to_rig_tf = False
@@ -90,24 +92,24 @@ class BagParser:
         self.ouster_ts_index_dict[msg_header_time] = self.lidar_pc_num
         self.lidar_pc_num += 1
 
-    def handle_rgb_cam_info(self,msg,msg_header_time): 
+    def handle_rgb_cam_info(self, msg, msg_header_time):
         if not self.rgb_info_initted: 
             self.rgb_info_initted = True 
-            self.rgb_info = utils.cam_info_to_json(msg)  
+            self.rgb_info = utils.cam_info_to_json(msg)
 
     def handle_rgb_image(self, msg, msg_header_time):
-
         image = utils.image_msg_to_numpy(msg=msg)
+        if image.dtype != np.uint8:
+            image = (255 * (image - np.min(image)) / (np.max(image) - np.min(image))).astype(np.uint8)
 
-        # Save rgb image
-        filename = f"{self.camera_rgb_path}/unsorted_camera_rgb_image_{self.camera_rgb_num}.bin"
-        image.tofile(filename)
+        filename = f"{self.camera_rgb_path}/unsorted_camera_rgb_image_{self.camera_rgb_num}.png"
+        cv2.imwrite(filename, image)
 
         # Store timestamp and index
         self.camera_rgb_ts_index_dict[msg_header_time] = self.camera_rgb_num
         self.camera_rgb_num += 1
 
-    def handle_depth_cam_info(self,msg,msg_header_time): 
+    def handle_depth_cam_info(self,msg,msg_header_time):
         if not self.depth_info_initted: 
             self.depth_info_initted = True 
             self.depth_info = utils.cam_info_to_json(msg) 
@@ -170,40 +172,41 @@ class BagParser:
         self.cascade_datacube_ts_index_dict[msg_header_time] = self.cascade_datacube_num
         self.cascade_datacube_num += 1
 
-    # def handle_transforms(self, msg, msg_time):
-    #     if hasattr(msg, 'transforms'):
-    #         for transform in msg.transforms:
-    #             filename = None
+    def handle_transforms(self, msg, msg_time):
+        if hasattr(msg, 'transforms'):
+            for transform in msg.transforms:
+                filename = None
 
-    #             if self.base_to_rig_tf and self.rig_to_cascade_tf and self.rig_to_camera_tf and self.rig_to_mountplate_tf and self.mountplate_to_lidar_tf and self.lidar_to_imu_tf:
-    #                 break
-    #             elif transform.header.frame_id == 'base_link' and transform.child_frame_id == 'rig' and not self.base_to_rig_tf:
-    #                 self.base_to_rig_tf = True
-    #                 filename = f'{self.calib_trans_dir_path}/base_to_rig.txt'                   
-    #             elif transform.header.frame_id == 'rig':
-    #                 if transform.child_frame_id == 'cascade_link' and not self.rig_to_cascade_tf:
-    #                     self.rig_to_cascade_tf = True
-    #                     filename = f'{self.calib_trans_dir_path}/rig_to_cascade.txt'
-    #                 elif transform.child_frame_id == 'mounting_plate' and not self.rig_to_mountplate_tf:
-    #                     self.rig_to_mountplate_tf = True
-    #                     filename = f'{self.calib_trans_dir_path}/rig_to_mountplate.txt' 
-    #                 elif transform.child_frame_id == 'camera_link' and not self.rig_to_camera_tf:
-    #                     self.rig_to_camera_tf = True
-    #                     filename = f'{self.calib_trans_dir_path}/rig_to_camera.txt'
-    #             elif transform.header.frame_id == 'mounting_plate' and transform.child_frame_id == 'os_sensor' and not self.mountplate_to_lidar_tf:                      
-    #                 self.mountplate_to_lidar_tf = True
-    #                 filename = f'{self.calib_trans_dir_path}/mountplate_to_lidar.txt'
-    #             elif transform.header.frame_id == 'os_sensor' and transform.child_frame_id == 'imu_sensor' and not self.lidar_to_imu_tf: 
-    #                 self.lidar_to_imu_tf = True
-    #                 filename = f'{self.calib_trans_dir_path}/lidar_to_imu.txt'
-    # #           
-    #             if filename is not None:
-    #                 trans, quat = utils.transform_msg_to_numpy(transform)
-    #                 utils.save_transform(trans, quat, filename)
+                if self.base_to_rig_tf and self.rig_to_cascade_tf and self.rig_to_camera_tf and self.rig_to_mountplate_tf and self.mountplate_to_lidar_tf and self.lidar_to_imu_tf:
+                    break
+                elif transform.header.frame_id == 'base_link' and transform.child_frame_id == 'rig' and not self.base_to_rig_tf:
+                    self.base_to_rig_tf = True
+                    filename = f'{self.calib_trans_dir_path}/base_to_rig.txt'
+                elif transform.header.frame_id == 'rig':
+                    if transform.child_frame_id == 'cascade_link' and not self.rig_to_cascade_tf:
+                        self.rig_to_cascade_tf = True
+                        filename = f'{self.calib_trans_dir_path}/rig_to_cascade.txt'
+                    elif transform.child_frame_id == 'mounting_plate' and not self.rig_to_mountplate_tf:
+                        self.rig_to_mountplate_tf = True
+                        filename = f'{self.calib_trans_dir_path}/rig_to_mountplate.txt'
+                    elif transform.child_frame_id == 'camera_link' and not self.rig_to_camera_tf:
+                        self.rig_to_camera_tf = True
+                        filename = f'{self.calib_trans_dir_path}/rig_to_camera.txt'
+                elif transform.header.frame_id == 'mounting_plate' and transform.child_frame_id == 'os_sensor' and not self.mountplate_to_lidar_tf:
+                    self.mountplate_to_lidar_tf = True
+                    filename = f'{self.calib_trans_dir_path}/mountplate_to_lidar.txt'
+                elif transform.header.frame_id == 'os_sensor' and transform.child_frame_id == 'imu_sensor' and not self.lidar_to_imu_tf:
+                    self.lidar_to_imu_tf = True
+                    filename = f'{self.calib_trans_dir_path}/lidar_to_imu.txt'
+    #
+                if filename is not None:
+                    trans, quat = utils.transform_msg_to_numpy(transform)
+                    utils.save_transform(trans, quat, filename)
 
 
     def read_bag(self, rosbag_path):
         # Open specified rosbag file
+        print('reading bag', rosbag_path)
         bag = rosbag.Bag(rosbag_path)
 
         for topic, msg, bag_time in bag.read_messages(self.topics_handlers_dict.keys()):
@@ -226,19 +229,18 @@ class BagParser:
 
     def write_data_to_files(self):
         # Helper function to handle timestamps, renaming, and saving data
-        def save_and_rename(timestamp_file_prefix, ts_index_dict, timestamp_path, data_path, filename_prefix):
+        def save_and_rename(timestamp_file_prefix, ts_index_dict, timestamp_path, data_path, filename_prefix, file_ext='.bin'):
             timestamps_np = np.array(sorted(ts_index_dict.keys()))
             np.savetxt(f'{timestamp_path}/{timestamp_file_prefix}timestamps.txt', timestamps_np, fmt='%s')
 
             for idx, timestamp in enumerate(timestamps_np):
                 original_index = ts_index_dict[timestamp]
-                new_index = idx + 1
-                original_filename = f"{data_path}/unsorted_{filename_prefix}_{original_index}.bin"
-                new_filename = f"{data_path}/{filename_prefix}_{new_index}.bin"
+                original_filename = f"{data_path}/unsorted_{filename_prefix}_{original_index}{file_ext}"
+                new_filename = f"{data_path}/{filename_prefix}_{idx}{file_ext}"
                 os.rename(original_filename, new_filename)
         
         # Write and rename CAMERA RGB data
-        save_and_rename("rgb_", self.camera_rgb_ts_index_dict, self.camera_path, self.camera_rgb_path, "camera_rgb_image")
+        save_and_rename("rgb_", self.camera_rgb_ts_index_dict, self.camera_path, self.camera_rgb_path, "camera_rgb_image", file_ext='.png')
         
         # Write and rename CAMERA DEPTH data
         save_and_rename("depth_", self.camera_depth_ts_index_dict, self.camera_path, self.camera_depth_path, "camera_depth_image")

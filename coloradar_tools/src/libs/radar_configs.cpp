@@ -1,4 +1,4 @@
-#include "configs.h"
+#include "radar_configs.h"
 
 
 std::map<std::string, std::vector<std::string>> readConfig(const std::filesystem::path& configFile) {

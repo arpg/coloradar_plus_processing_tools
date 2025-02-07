@@ -23,6 +23,8 @@ protected:
     void init(const std::filesystem::path& pathToDataset);
     Eigen::Affine3f loadTransform(const std::filesystem::path& filePath);
 
+    void readExportConfig(const std::filesystem::path& configPath);
+
 public:
     ColoradarPlusDataset(const std::filesystem::path& pathToDataset);
 

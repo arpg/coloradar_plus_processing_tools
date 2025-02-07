@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import yaml
 from tqdm import tqdm
-from coloradar_plus_processing_tools import DatasetToKitti
+from coloradar_plus_processing_tools.dataset_to_kitti import DatasetToKitti
 
 def parse_config(config_path):
     """_Parser for ColoradarPlus-to-kitti Configuration file._
@@ -33,7 +33,7 @@ def parse_config(config_path):
 
 def main():
     # Convert values from YAML config to dict for easier handling
-    crp_config_dict = parse_config("configs/processing_config_doncey.yaml")
+    crp_config_dict = parse_config("configs/processing_config_anna.yaml")
 
     # Initialize bag_parser object
     dataset2kitti = DatasetToKitti(crp_config_dict)

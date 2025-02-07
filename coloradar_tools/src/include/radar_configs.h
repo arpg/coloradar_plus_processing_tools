@@ -1,5 +1,5 @@
-#ifndef CONFIGS_H
-#define CONFIGS_H
+#ifndef RADAR_CONFIGS_H
+#define RADAR_CONFIGS_H
 
 #include "internal.h"
 

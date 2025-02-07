@@ -3,7 +3,7 @@ import open3d as o3d
 import argparse
 from scipy.spatial.transform import Rotation as R
 import time
-import demo_tools
+from coloradar_tools.scripts import demo_tools
 import scipy.spatial.transform
 
 

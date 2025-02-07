@@ -3,3 +3,4 @@ matplotlib
 open3d
 scikit-learn
 tqdm
+opencv-python-headless
