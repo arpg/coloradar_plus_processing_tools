@@ -2,6 +2,7 @@
 #define DATASET_H
 
 #include "coloradar_run.h"
+#include "dataset_configs.h"
 
 
 namespace coloradar {
@@ -23,7 +24,15 @@ protected:
     void init(const std::filesystem::path& pathToDataset);
     Eigen::Affine3f loadTransform(const std::filesystem::path& filePath);
 
-    void readExportConfig(const std::filesystem::path& configPath);
+    // void readExportConfig(const std::filesystem::path& configPath);
+
+    // void exportConfig(config);
+    void exportCascade(const std::vector<ColoradarPlusRun*> &runs, const DatasetExportConfig &userConfig, Json::Value finalConfig);
+    // void exportLidar(config);
+    // void exportImu(config);
+    // void exportBaseFrame(config);
+    // void exportSingleChip(config); for old dataset
+    // void exportCamera(config); later
 
 public:
     ColoradarPlusDataset(const std::filesystem::path& pathToDataset);
