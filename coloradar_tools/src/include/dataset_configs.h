@@ -19,6 +19,7 @@ struct FovExportConfig {
 };
 
 struct BaseExportConfig {
+    Device device;
     bool exportPoses = false;
     bool exportTimestamps = false;
 };
@@ -56,7 +57,7 @@ struct LidarExportConfig : public BaseExportConfig {
     float mapSampleOccupancyThresholdPercent = 0.0f;
     bool allowResample = true;
     bool forceResample = false;
-    std::string centerSensor = "lidar";
+    Device centerSensor;
     FovConfig mapSampleFov;
 };
 
@@ -67,8 +68,6 @@ struct ImuExportConfig : public BaseExportConfig {
 
 class DatasetExportConfig {
 protected:
-    static const std::set<std::string> devices_ = {"base_frame", "lidar", "cascade_radar", "single_chip_radar"};
-
     std::filesystem::path destinationFilePath_ = "dataset.h5";
     std::vector<std::string> runs_ = {};
     bool exportTransforms_ = false;
@@ -80,7 +79,7 @@ protected:
     RadarExportConfig        singleChip_;
 
     YAML::Node findNode(const YAML::Node &config, const std::string &key);
-    void validateConfig(const YAML::Node &config)
+    void validateConfigYaml(const YAML::Node &config);
     std::filesystem::path parseDestination(const YAML::Node &config, const std::filesystem::path &defaultDestination);
     std::vector<std::string> parseRuns(const YAML::Node &config);
     bool parseBoolKey(const YAML::Node &config, const std::string &key, bool defaultValue);
@@ -90,7 +89,7 @@ protected:
 
     std::filesystem::path validateDestination(const std::filesystem::path &destination);
     std::vector<std::string> validateRuns(const std::vector<std::string> &runs);
-    void validateDeviceName(const std::string &name);
+    void validate();
 
 public:
     DatasetExportConfig(const std::string &yamlFilePath);
@@ -116,6 +115,8 @@ public:
     const BaseExportConfig         &base() const;
     const ImuExportConfig          &imu() const;
     const RadarExportConfig        &singleChip() const;
+
+    void fitParameters(ColoradarPlusDataset* dataset);
 
     // void exportConfig(config);
     // void exportCascade(ColoradarPlusDataset* dataset);

@@ -226,41 +226,42 @@ namespace coloradar {
 
 
 void ColoradarPlusDataset::exportCascade(const std::vector<ColoradarPlusRun*> &runs, const DatasetExportConfig &userConfig, Json::Value finalConfig) {
-    const std::string cascadeDatacubeContentName = "cascade_datacubes",
-                      cascadeHeatmapContentName = "cascade_heatmaps",
-                      cascadeCloudContentName = "cascade_clouds",
-                      cascadePosesContentName = "cascade_poses",
-                      cascadeTimestampsContentName = "cascade_timestamps";
+    const std::string datacubeContentName = "cascade_datacubes",
+                      heatmapContentName = "cascade_heatmaps",
+                      cloudContentName = "cascade_clouds",
+                      posesContentName = "cascade_poses",
+                      timestampsContentName = "cascade_timestamps";
 
-    if (includeCascadePointclouds) finalConfig["data_content"].append(cascadeCloudContentName);
-    if (includeCascadePoses) finalConfig["data_content"].append(cascadePosesContentName);
-    if (includeCascadeTimestamps) finalConfig["data_content"].append(cascadeTimestampsContentName);
+//    if (includeCascadePointclouds) finalConfig["data_content"].append(cascadeCloudContentName);
+//    if (includeCascadePoses) finalConfig["data_content"].append(cascadePosesContentName);
+//    if (includeCascadeTimestamps) finalConfig["data_content"].append(cascadeTimestampsContentName);
 
-    int cascadeCloudNumDims = collapseCascadeElevation ? 3 : 4;
-    int cascadeNumAzimuthBins = cascadeAzimuthMaxBin >= 0 && (cascadeAzimuthMaxBin + 1) * 2 < cascadeConfig_->numAzimuthBins ?
-                                (cascadeAzimuthMaxBin + 1) * 2 :
-                                cascadeConfig_->numAzimuthBins;
-    int cascadeNumElevationBins = cascadeElevationMaxBin >= 0 && (cascadeElevationMaxBin + 1) * 2 < cascadeConfig_->numElevationBins ?
-                                  (cascadeElevationMaxBin + 1) * 2 :
-                                  cascadeConfig_->numElevationBins;
-    int cascadeNumRangeBins = cascadeRangeMaxBin >= 0 && cascadeRangeMaxBin + 1 < cascadeConfig_->numPosRangeBins ?
-                              cascadeRangeMaxBin + 1 :
-                              cascadeConfig_->numPosRangeBins;
-    int cascadeNumDims = removeCascadeDopplerDim ? 1 : 2;
-    int elStartIdx = (cascadeConfig_->numElevationBins - cascadeNumElevationBins) / 2;
-    int elEndIdx = elStartIdx + cascadeNumElevationBins;
-    std::vector<float> elevationBins(cascadeConfig_->elevationBins.begin() + elStartIdx, cascadeConfig_->elevationBins.begin() + elEndIdx);
-    float cascadeHorizontalFov, cascadeVerticalFov, cascadeRange;
-    coloradar::convertRadarBinsToFov(cascadeAzimuthMaxBin, cascadeElevationMaxBin, cascadeRangeMaxBin, cascadeConfig_, cascadeHorizontalFov, cascadeVerticalFov, cascadeRange);
-    std::vector<hsize_t> heatmapDims;
-    if (cascadeNumAzimuthBins > 1) heatmapDims.push_back(static_cast<hsize_t>(cascadeNumAzimuthBins));
-    if (cascadeNumRangeBins > 1) heatmapDims.push_back(static_cast<hsize_t>(cascadeNumRangeBins));
-    if (cascadeNumElevationBins > 1) heatmapDims.push_back(static_cast<hsize_t>(cascadeNumElevationBins));
-    if (cascadeNumDims > 1) heatmapDims.push_back(static_cast<hsize_t>(cascadeNumDims));
-    if (heatmapDims.empty()) heatmapDims.push_back(1);
+
 
     if (config.cascade().exportHeatmaps) {
         finalConfig["data_content"].append(cascadeHeatmapContentName);
+        int cascadeCloudNumDims = userConfig.cascade().collapseElevation ? 3 : 4;
+        int cascadeNumAzimuthBins = cascadeAzimuthMaxBin >= 0 && (cascadeAzimuthMaxBin + 1) * 2 < cascadeConfig_->numAzimuthBins ?
+                                    (cascadeAzimuthMaxBin + 1) * 2 :
+                                    cascadeConfig_->numAzimuthBins;
+        int cascadeNumElevationBins = cascadeElevationMaxBin >= 0 && (cascadeElevationMaxBin + 1) * 2 < cascadeConfig_->numElevationBins ?
+                                      (cascadeElevationMaxBin + 1) * 2 :
+                                      cascadeConfig_->numElevationBins;
+        int cascadeNumRangeBins = cascadeRangeMaxBin >= 0 && cascadeRangeMaxBin + 1 < cascadeConfig_->numPosRangeBins ?
+                                  cascadeRangeMaxBin + 1 :
+                                  cascadeConfig_->numPosRangeBins;
+        int cascadeNumDims = removeCascadeDopplerDim ? 1 : 2;
+        int elStartIdx = (cascadeConfig_->numElevationBins - cascadeNumElevationBins) / 2;
+        int elEndIdx = elStartIdx + cascadeNumElevationBins;
+        std::vector<float> elevationBins(cascadeConfig_->elevationBins.begin() + elStartIdx, cascadeConfig_->elevationBins.begin() + elEndIdx);
+        float cascadeHorizontalFov, cascadeVerticalFov, cascadeRange;
+        coloradar::convertRadarBinsToFov(cascadeAzimuthMaxBin, cascadeElevationMaxBin, cascadeRangeMaxBin, cascadeConfig_, cascadeHorizontalFov, cascadeVerticalFov, cascadeRange);
+        std::vector<hsize_t> heatmapDims;
+        if (cascadeNumAzimuthBins > 1) heatmapDims.push_back(static_cast<hsize_t>(cascadeNumAzimuthBins));
+        if (cascadeNumRangeBins > 1) heatmapDims.push_back(static_cast<hsize_t>(cascadeNumRangeBins));
+        if (cascadeNumElevationBins > 1) heatmapDims.push_back(static_cast<hsize_t>(cascadeNumElevationBins));
+        if (cascadeNumDims > 1) heatmapDims.push_back(static_cast<hsize_t>(cascadeNumDims));
+        if (heatmapDims.empty()) heatmapDims.push_back(1);
 
         std::vector<float> framesFlat;
         std::vector<float> heatmapsFlat;

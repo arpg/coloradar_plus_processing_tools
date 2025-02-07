@@ -1,6 +1,7 @@
 #ifndef UTILS_H
 #define UTILS_H
 
+#include "device.h"
 #include "radar_configs.h"
 
 #include <filesystem>

@@ -18,7 +18,7 @@ YAML::Node DatasetExportConfig::findNode(const YAML::Node &config, const std::st
     return node;
 }
 
-void DatasetExportConfig::validateConfig(const YAML::Node &config) {
+void DatasetExportConfig::validateConfigYaml(const YAML::Node &config) {
     YAML::Node devicesNode = findNode(config, "devices");
     if (!devicesNode.IsDefined() || devicesNode.IsNull()) {
         return;
@@ -28,6 +28,7 @@ void DatasetExportConfig::validateConfig(const YAML::Node &config) {
         if (devices_.find(deviceName) == devices_.end()) {
             std::cerr << "Warning: Unknown device " << deviceName << ", skipping." << std::endl;
         }
+        else
     }
 }
 
@@ -137,18 +138,23 @@ std::vector<std::string> DatasetExportConfig::validateRuns(const std::vector<std
     return runs;
 }
 
-void DatasetExportConfig::validateDeviceName(const std::string &name) {
-    if (devices_.find(name) == devices_.end()) {
-        throw std::runtime_error("Unknown device: " + name);
+void DatasetExportConfig::validate() {
+    for (const auto &radarConfig : {cascade_, singleChip_}) {
+        if (radarConfig.collapseElevation && (radarConfig.collapseElevationMinZ < radarConfig.collapseElevationMaxZ)) {
+            throw std::runtime_error("Radar collapseElevation is set to True but collapseElevationMinZ device: " + name);
+        }
     }
 }
 
+
 DatasetExportConfig::DatasetExportConfig(const std::string &yamlFilePath) {
     YAML::Node config = YAML::LoadFile(yamlFilePath);
+    validateConfigYaml(config);
     destinationFilePath_ = parseDestination(config, destinationFilePath_);
     runs_ = parseRuns(config);
     exportTransforms_ = parseBoolKey(config, "global.export_transforms", exportTransforms_);
 
+    cascade_.device = Device()
     cascade_.exportPoses = parseBoolKey(config, "devices.cascade_radar.export_poses", cascade_.exportPoses);
     cascade_.exportTimestamps = parseBoolKey(config, "devices.cascade_radar.export_timestamps", cascade_.exportTimestamps);
     cascade_.fov.azimuthIdx = parseIntKey(config, "devices.cascade_radar.fov_azimuth_idx", cascade_.fov.azimuthIdx);
@@ -208,6 +214,8 @@ DatasetExportConfig::DatasetExportConfig(const std::string &yamlFilePath) {
     singleChip_.exportClouds = parseBoolKey(config, "devices.single_chip_radar.export_clouds", singleChip_.exportClouds);
     singleChip_.intensityThresholdPercent = parseFloatKey(config, "devices.single_chip_radar.intensity_threshold_percent", singleChip_.intensityThresholdPercent);
     singleChip_.cloudsInGlobalFrame = parseBoolKey(config, "devices.single_chip_radar.clouds_in_global_frame", singleChip_.cloudsInGlobalFrame);
+
+    validate();
 }
 
 DatasetExportConfig::DatasetExportConfig(
@@ -266,6 +274,34 @@ const ImuExportConfig &DatasetExportConfig::imu() const {
 
 const RadarExportConfig &DatasetExportConfig::singleChip() const {
     return singleChip_;
+}
+
+void DatasetExportConfig::fitRadarParameters(RadarExportConfig* radarConfig, ColoradarPlusDataset* dataset) {
+    if
+}
+
+void DatasetExportConfig::fitParameters(ColoradarPlusDataset* dataset) {
+    std::vector<std::string> existingRuns = dataset->listRuns();
+    if (runs_.empty()) {
+        runs_ = existingRuns;
+    } else {
+        std::vector<std::string> finalRuns = {};
+        for (const auto &runName : runs_) {
+            if std::find(existingRuns.begin(), existingRuns.end(), runName) != existingRuns.end() {
+                finalRuns.push_back(runName);
+            } else {
+                std::cerr << "Warning: Unknown run " << runName << ", skipping." << std::endl;
+            }
+        }
+        if (finalRuns.empty()) {
+            throw std::runtime_error("No valid runs specified.");
+        }
+        runs_ = finalRuns;
+    }
+
+    for (auto radarConfig : {cascade_, singleChip_}) {
+
+    }
 }
 
 }
