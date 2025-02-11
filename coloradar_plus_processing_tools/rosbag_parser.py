@@ -98,14 +98,11 @@ class BagParser:
             self.rgb_info = utils.cam_info_to_json(msg)
 
     def handle_rgb_image(self, msg, msg_header_time):
-        image = utils.image_msg_to_numpy(msg=msg)
-        if image.dtype != np.uint8:
-            image = (255 * (image - np.min(image)) / (np.max(image) - np.min(image))).astype(np.uint8)
+        image = utils.image_msg_to_numpy(msg=msg, datatype=np.uint8)
 
         filename = f"{self.camera_rgb_path}/unsorted_camera_rgb_image_{self.camera_rgb_num}.png"
         cv2.imwrite(filename, image)
 
-        # Store timestamp and index
         self.camera_rgb_ts_index_dict[msg_header_time] = self.camera_rgb_num
         self.camera_rgb_num += 1
 
@@ -117,11 +114,9 @@ class BagParser:
     def handle_depth_image(self, msg, msg_header_time):
         image = utils.image_msg_to_numpy(msg, datatype=np.uint16, num_channels=1)
 
-        # Save depth image
-        filename = f"{self.camera_depth_path}/unsorted_camera_depth_image_{self.camera_depth_num}.bin"
-        image.tofile(filename)
+        filename = f"{self.camera_depth_path}/unsorted_camera_depth_image_{self.camera_depth_num}.png"
+        cv2.imwrite(filename, image)
 
-        # Store timestamp and index
         self.camera_depth_ts_index_dict[msg_header_time] = self.camera_depth_num
         self.camera_depth_num += 1
 
@@ -243,7 +238,7 @@ class BagParser:
         save_and_rename("rgb_", self.camera_rgb_ts_index_dict, self.camera_path, self.camera_rgb_path, "camera_rgb_image", file_ext='.png')
         
         # Write and rename CAMERA DEPTH data
-        save_and_rename("depth_", self.camera_depth_ts_index_dict, self.camera_path, self.camera_depth_path, "camera_depth_image")
+        save_and_rename("depth_", self.camera_depth_ts_index_dict, self.camera_path, self.camera_depth_path, "camera_depth_image", file_ext='.png')
         
         # Write and rename LIDAR data
         save_and_rename("", self.ouster_ts_index_dict, self.lidar_path, self.lidar_pc_bin_path, "lidar_pointcloud")

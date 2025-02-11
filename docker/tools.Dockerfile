@@ -85,18 +85,4 @@ RUN apt update && apt install -y python3-pip
 RUN pip3 install --upgrade --ignore-installed -r /tmp/requirements.txt
 
 
-# Python Tools
-COPY coloradar_tools/scripts scripts
-COPY coloradar_tools/__init__.py coloradar_tools/demo.ipynb ./
-
-
-WORKDIR /src/coloradar_plus_processing_tools
-COPY coloradar_plus_processing_tools /src/coloradar_plus_processing_tools/coloradar_plus_processing_tools
-COPY configs /src/coloradar_plus_processing_tools/configs
-COPY main.py /src/coloradar_plus_processing_tools
-#WORKDIR /catkin_ws
-#RUN mkdir src
-#COPY dca1000_device /catkin_ws/src/msgs
-
-
 CMD ["bash"]

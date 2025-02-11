@@ -1,0 +1,28 @@
+services:
+  base:
+    build:
+      context: .
+      dockerfile: docker/ros1-tools.Dockerfile
+    stdin_open: true
+    tty: true
+    runtime: nvidia
+    network_mode: "host"
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+
+  add_heatmaps_to_bags:
+    extends:
+      service: base
+    working_dir: /src/coloradar_tools
+    command: source /catkin_ws/devel/setup.bash && python3 scripts/add_heatmaps_to_bags.py
+    volumes:
+      - /media/arpg/brendan-ssd/coloradarplus_data:/root/bags
+      # - ~/coloradar/bags_plus:/root/bags
+
+  binarize_bags:
+    extends:
+      service: base
+    working_dir: /src/coloradar_plus_processing_tools
+    command: python3 main.py
+    volumes:
+      - /media/arpg/brendan-ssd/coloradarplus_data:/root/bags
