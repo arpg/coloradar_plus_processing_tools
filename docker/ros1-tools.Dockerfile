@@ -1,12 +1,6 @@
 FROM coloradar-tools:20.04-cuda12.6-noetic
 
 
-# Heatmap Utils
-WORKDIR /src/coloradar_tools
-COPY coloradar_tools/scripts scripts
-COPY coloradar_tools/__init__.py coloradar_tools/demo.ipynb ./
-
-
 # Binarization Utils
 WORKDIR /src/coloradar_plus_processing_tools
 COPY coloradar_plus_processing_tools /src/coloradar_plus_processing_tools/coloradar_plus_processing_tools

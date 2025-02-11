@@ -373,7 +373,7 @@ PYBIND11_MODULE(coloradar_dataset_tools, m) {
     );
 
     // ColoradarDataset
-    py::class_<coloradar::ColoradarDataset, coloradar::ColoradarPlusDataset>(m, "ColoradarDataset")
+    py::class_<coloradar::ColoradarDataset, std::shared_ptr<coloradar::ColoradarDataset>, coloradar::ColoradarPlusDataset>(m, "ColoradarDataset")
         .def(py::init<const std::filesystem::path&>())
         .def("get_run", &coloradar::ColoradarDataset::getRun, py::return_value_policy::reference)
         .def("single_chip_transform", [](coloradar::ColoradarDataset& self) { return poseToNumpy(self.singleChipTransform()); })

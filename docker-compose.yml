@@ -9,15 +9,15 @@ services:
     network_mode: "host"
     environment:
       - NVIDIA_VISIBLE_DEVICES=all
+    image: ros1-tools
 
   add_heatmaps_to_bags:
     extends:
       service: base
     working_dir: /src/coloradar_tools
-    command: source /catkin_ws/devel/setup.bash && python3 scripts/add_heatmaps_to_bags.py
+    command: bash -c 'source /catkin_ws/devel/setup.bash && python3 scripts/add_heatmaps_to_bags.py'
     volumes:
       - /media/arpg/brendan-ssd/coloradarplus_data:/root/bags
-      # - ~/coloradar/bags_plus:/root/bags
 
   binarize_bags:
     extends:

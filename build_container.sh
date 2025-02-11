@@ -89,6 +89,9 @@ docker build \
     --build-arg DOCKER_PYBIND_VERSION="$DOCKER_PYBIND_VERSION" \
     -f "docker/tools.Dockerfile" -t "$LIB_IMAGE_NAME" .
 
+if [ $? -ne 0 ]; then
+    exit 1
+fi
 
 # Create container
 COMMAND="docker run -it --rm --name coloradar-tools"
