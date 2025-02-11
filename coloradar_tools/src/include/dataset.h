@@ -2,6 +2,7 @@
 #define DATASET_H
 
 #include "coloradar_run.h"
+#include "device.h"
 #include "dataset_configs.h"
 
 
@@ -24,10 +25,16 @@ protected:
     void init(const std::filesystem::path& pathToDataset);
     Eigen::Affine3f loadTransform(const std::filesystem::path& filePath);
 
+    std::unique_ptr<BaseDevice> base_device_;
+    std::unique_ptr<ImuDevice> imu_;
+    std::unique_ptr<CascadeDevice> cascade_;
+    std::unique_ptr<LidarDevice> lidar_;
+    // std::vector<std::unique_ptr<BaseDevice>> devices;
+
     // void readExportConfig(const std::filesystem::path& configPath);
 
     // void exportConfig(config);
-    void exportCascade(const std::vector<ColoradarPlusRun*> &runs, const DatasetExportConfig &userConfig, Json::Value finalConfig);
+    void exportCascade(const std::vector<ColoradarPlusRun*> &runs, const H5::H5File &datasetFile, const DatasetExportConfig &userConfig, Json::Value finalConfig);
     // void exportLidar(config);
     // void exportImu(config);
     // void exportBaseFrame(config);
@@ -35,7 +42,12 @@ protected:
     // void exportCamera(config); later
 
 public:
-    ColoradarPlusDataset(const std::filesystem::path& pathToDataset);
+    // ColoradarPlusDataset(const std::filesystem::path& pathToDataset);
+    explicit ColoradarPlusDataset(const std::filesystem::path& pathToDataset);
+    ColoradarPlusDataset(const ColoradarPlusDataset&) = delete;
+    ColoradarPlusDataset& operator=(const ColoradarPlusDataset&) = delete;
+    ColoradarPlusDataset(ColoradarPlusDataset&&) noexcept = default;
+    ColoradarPlusDataset& operator=(ColoradarPlusDataset&&) noexcept = default;
 
     std::vector<std::string> listRuns();
     std::vector<ColoradarPlusRun*> getRuns();
@@ -104,6 +116,7 @@ protected:
     Eigen::Affine3f singleChipTransform_;
 
     RadarConfig* singleChipConfig_;
+    std::unique_ptr<SingleChipDevice> single_chip_;
 
 public:
     ColoradarDataset(const std::filesystem::path& pathToDataset);

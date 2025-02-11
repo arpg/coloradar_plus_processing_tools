@@ -262,7 +262,7 @@ PYBIND11_MODULE(coloradar_dataset_tools, m) {
         }, py::arg("cloud_idx"), py::arg("intensity_threshold_percent") = 0);
 
     // ColoradarPlusDataset
-    py::class_<coloradar::ColoradarPlusDataset>(m, "ColoradarPlusDataset")
+    py::class_<coloradar::ColoradarPlusDataset, std::shared_ptr<coloradar::ColoradarPlusDataset>>(m, "ColoradarPlusDataset")
         .def(py::init<const std::filesystem::path&>())
         .def("list_runs", &coloradar::ColoradarPlusDataset::listRuns)
         .def("get_runs", &coloradar::ColoradarPlusDataset::getRuns, py::return_value_policy::reference)
@@ -271,8 +271,8 @@ PYBIND11_MODULE(coloradar_dataset_tools, m) {
         .def("lidar_transform", [](coloradar::ColoradarPlusDataset& self) { return poseToNumpy(self.lidarTransform()); })
         .def("cascade_transform", [](coloradar::ColoradarPlusDataset& self) { return poseToNumpy(self.cascadeTransform()); })
         .def("cascade_config", &coloradar::ColoradarPlusDataset::cascadeConfig, py::return_value_policy::reference)
-        .def("export_to_file", [](
-            coloradar::ColoradarPlusDataset self,
+        .def("export_to_file", [] (
+            coloradar::ColoradarPlusDataset& self,
             std::vector<coloradar::ColoradarPlusRun*> runs = {},
             const std::string& destination = "",
             const bool& includeCascadeHeatmaps = false,

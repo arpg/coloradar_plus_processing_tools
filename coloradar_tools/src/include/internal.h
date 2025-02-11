@@ -8,9 +8,12 @@
 #include <vector>
 #include <map>
 #include <sstream>
+#include <fstream>
 #include <regex>
+#include <memory>
 #include <Eigen/Dense>
 #include <jsoncpp/json/json.h>
+#include <yaml-cpp/yaml.h>
 
 
 namespace coloradar::internal {

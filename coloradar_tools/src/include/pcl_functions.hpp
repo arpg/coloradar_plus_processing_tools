@@ -51,8 +51,8 @@ struct PointKeyHash {
 template <coloradar::Pcl4dPointType PointT, template <typename> class CloudT>
 void coloradar::collapseElevation(CloudT<PointT>& cloud, const float& elevationMinMeters, const float& elevationMaxMeters) {
     const int precision = 4;
-    if (elevationMinMeters >= elevationMaxMeters)
-        throw std::invalid_argument("Invalid elevation range: elevationMin must be less than elevationMax.");
+    if (elevationMinMeters > elevationMaxMeters)
+        throw std::invalid_argument("Invalid elevation range: elevationMin must be less or equal to elevationMax.");
     std::unordered_map<PointKey, PointT, PointKeyHash> maxIntensityMap;
     maxIntensityMap.reserve(cloud.size());
     for (const auto& point : cloud) {

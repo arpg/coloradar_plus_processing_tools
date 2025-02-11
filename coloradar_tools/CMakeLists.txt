@@ -45,11 +45,12 @@ find_package(OpenCV REQUIRED)
 find_package(CUDA)
 find_package(HDF5 REQUIRED COMPONENTS C CXX)
 find_package(pybind11 2.6)
+find_package(yaml-cpp REQUIRED)
 
 
 set(CUDA_LIBS ${CUDA_LIBRARIES} ${CUDA_CUFFT_LIBRARIES})
 # include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
-include_directories(${PROJECT_SOURCE_DIR}/src/include ${Boost_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS} ${OCTOMAP_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS} ${JSONCPP_INCLUDE_DIRS})
+include_directories(${PROJECT_SOURCE_DIR}/src/include ${Boost_INCLUDE_DIRS} ${YAML_CPP_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS} ${OCTOMAP_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS} ${JSONCPP_INCLUDE_DIRS})
 
 ### LIBS
 
@@ -57,12 +58,14 @@ include_directories(${PROJECT_SOURCE_DIR}/src/include ${Boost_INCLUDE_DIRS} ${PC
 add_library(coloradar_tools SHARED
     src/libs/internal.cpp
     src/libs/radar_configs.cpp
+    src/libs/device.cpp
+    src/libs/dataset_configs.cpp
     src/libs/pcl_functions.cpp
     src/libs/octo_pointcloud.cpp
     src/libs/coloradar_run.cpp
     src/libs/dataset.cpp
 )
-target_link_libraries(coloradar_tools ${PCL_LIBRARIES} ${OCTOMAP_LIBRARIES} ${HDF5_LIBRARIES} ${JSONCPP_LIBRARIES})
+target_link_libraries(coloradar_tools ${YAML_CPP_LIBRARIES} ${PCL_LIBRARIES} ${OCTOMAP_LIBRARIES} ${HDF5_LIBRARIES} ${JSONCPP_LIBRARIES})
 
 
 if(pybind11_FOUND)
