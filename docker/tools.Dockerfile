@@ -74,7 +74,7 @@ COPY coloradar_tools/CMakeLists.txt .
 
 RUN mkdir build
 RUN cmake -B build
-RUN make -C build
+RUN make -C build -j2
 RUN ./build/coloradar_tests
 
 

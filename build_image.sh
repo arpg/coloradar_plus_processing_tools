@@ -37,38 +37,8 @@ echo "Using CUDA version: $DOCKER_CUDA_VERSION"
 
 
 # Set base image
-PYTHON_SCRIPT="coloradar_tools/scripts/find_base_image.py"
-if [ ! -f "$PYTHON_SCRIPT" ]; then
-    echo "Error: Python script '$PYTHON_SCRIPT' not found. Ensure it exists and is executable."
-    exit 1
-fi
-BASE_IMAGE=$(python3 "$PYTHON_SCRIPT" --cuda "$DOCKER_CUDA_VERSION" --ros "$ROS_DISTRO")
-if [ $? -ne 0 ] || [ -z "$BASE_IMAGE" ]; then
-    echo "Error: Failed to determine base image."
-    echo "$BASE_IMAGE"
-    exit 1
-fi
-echo "Using base image: $BASE_IMAGE"
-
-
-# Build OS image
-UBUNTU_VERSION=$(echo "$BASE_IMAGE" | grep -oP "ubuntu:\K[0-9]+\.[0-9]+|ubuntu\K[0-9]+\.[0-9]+$")
-echo "Using Ubuntu $UBUNTU_VERSION"
-OS_IMAGE_NAME="ubuntu:$UBUNTU_VERSION"
-if [ -n "$DOCKER_CUDA_VERSION" ]; then
-    OS_IMAGE_NAME="${OS_IMAGE_NAME}-cuda$DOCKER_CUDA_VERSION"
-fi
-if [ -n "$ROS_DISTRO" ]; then
-    OS_IMAGE_NAME="${OS_IMAGE_NAME}-$ROS_DISTRO"
-fi
-echo "Building OS image: $OS_IMAGE_NAME"
-docker build \
-    --build-arg BASE_IMAGE="$BASE_IMAGE" \
-    --build-arg ROS_DISTRO="$ROS_DISTRO" \
-    -f "docker/main.Dockerfile" -t "$OS_IMAGE_NAME" .
-if [ $? -ne 0 ]; then
-    exit 1
-fi
+OS_IMAGE_NAME="annazabnus/ros-cuda:$DOCKER_CUDA_VERSION-${ROS_DISTRO}"
+echo "Using base image: $OS_IMAGE_NAME"
 
 
 # Build lib image
@@ -76,6 +46,7 @@ TAG=$(echo "$OS_IMAGE_NAME" | awk -F: '{print $2}')
 LIB_IMAGE_NAME="coloradar-tools:$TAG"
 echo "Building lib image: $LIB_IMAGE_NAME"
 
+UBUNTU_VERSION=$(yq -r ".ros_versions.\"$ROS_DISTRO\".ubuntu // \"\"" "$CONFIG_FILE")
 DOCKER_GCC_VERSION=$(yq -r ".ubuntu_versions.\"$UBUNTU_VERSION\".gcc // \"\"" "$CONFIG_FILE")
 DOCKER_BOOST_VERSION=$(yq -r ".ubuntu_versions.\"$UBUNTU_VERSION\".boost // \"\"" "$CONFIG_FILE")
 DOCKER_PCL_VERSION=$(yq -r ".ubuntu_versions.\"$UBUNTU_VERSION\".pcl // \"\"" "$CONFIG_FILE")
@@ -92,12 +63,3 @@ docker build \
 if [ $? -ne 0 ]; then
     exit 1
 fi
-
-# Create container
-COMMAND="docker run -it --rm --name coloradar-tools"
-if [ -n "$DOCKER_CUDA_VERSION" ]; then
-    COMMAND="${COMMAND} --gpus all"
-fi
-COMMAND="${COMMAND} ${LIB_IMAGE_NAME} bash"
-echo "Run the command below to start the container. Add volumes via -v if necessary."
-echo "$COMMAND"

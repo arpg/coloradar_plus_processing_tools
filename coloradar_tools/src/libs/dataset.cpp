@@ -227,20 +227,40 @@ void saveCloudsToHDF5(const std::string& name, H5::H5File& file, const std::vect
 namespace coloradar {
 
 void ColoradarPlusDataset::exportCascade(const std::vector<ColoradarPlusRun*> &runs, const H5::H5File &datasetFile, const DatasetExportConfig &userConfig, Json::Value finalConfig) {
+    // Constants
     const std::string datacubeContentName = "cascade_datacubes",
                       heatmapContentName = "cascade_heatmaps",
                       cloudContentName = "cascade_clouds",
                       posesContentName = "cascade_poses",
                       timestampsContentName = "cascade_timestamps";
 
-//    if (cascade_->exportConfig()->exportHeatmaps()) {
+    // Process FOV. Representations: num bins, max bin idx, measurement units
+    int cascadeNumAzimuthBins = cascade_->exportConfig()->fov().azimuthIdx;
+    int cascadeNumElevationBins = cascade_->exportConfig()->fov().elevationIdx;
+    int cascadeNumRangeBins;
+    float cascadeHorizontalFov = cascade_->exportConfig()->fov().horizontalDegreesTotal;
+    float cascadeVerticalFov = cascade_->exportConfig()->fov().verticalDegreesTotal;
+    float cascadeRange = cascadeConfig_->clipRange(cascade_->exportConfig()->fov().rangeMeters);
+
+//    if (cascade_->exportConfig()->fov().useDegreeConstraints) {
+//        convertFovToRadarBins(horizontalFov, verticalFov, range, const coloradar::RadarConfig* config, int& azimuthMaxBin, int& elevationMaxBin, int& rangeMaxBin)
+//
+//    }
+//
+//    if (cascade_->exportConfig()->exportClouds() || cascade_->exportConfig()->exportHeatmaps()) {
+//        cascadeRange = cascade_->exportConfig()->fov().rangeMeters;
+//
+//
+//
+//        void coloradar::convertFovToRadarBins(horizontalFov, verticalFov, range, coloradar::RadarConfig* config, azimuthMaxBin, int& elevationMaxBin, int& rangeMaxBin)
+//    }
 //        finalConfig["data_content"].append(heatmapContentName);
 //        int cascadeCloudNumDims = cascade_->exportConfig()->collapseElevation() ? 3 : 4;
-//        int cascadeNumAzimuthBins = cascade_->exportConfig()->fov().azimuthIdx >= 0 && (cascadeAzimuthMaxBin + 1) * 2 < cascadeConfig_->numAzimuthBins ?
-//                                    (cascadeAzimuthMaxBin + 1) * 2 :
+//        int cascadeNumAzimuthBins = cascade_->exportConfig()->fov().azimuthIdx >= 0 && (cascade_->exportConfig()->fov().azimuthIdx + 1) * 2 < cascadeConfig_->numAzimuthBins ?
+//                                    (cascade_->exportConfig()->fov().azimuthIdx + 1) * 2 :
 //                                    cascadeConfig_->numAzimuthBins;
-//        int cascadeNumElevationBins = cascadeElevationMaxBin >= 0 && (cascadeElevationMaxBin + 1) * 2 < cascadeConfig_->numElevationBins ?
-//                                      (cascadeElevationMaxBin + 1) * 2 :
+//        int cascadeNumElevationBins = cascade_->exportConfig()->fov().elevationIdx >= 0 && (cascade_->exportConfig()->fov().elevationIdx + 1) * 2 < cascadeConfig_->numElevationBins ?
+//                                      (cascade_->exportConfig()->fov().elevationIdx + 1) * 2 :
 //                                      cascadeConfig_->numElevationBins;
 //        int cascadeNumRangeBins = cascadeRangeMaxBin >= 0 && cascadeRangeMaxBin + 1 < cascadeConfig_->numPosRangeBins ?
 //                                  cascadeRangeMaxBin + 1 :
@@ -273,7 +293,7 @@ void ColoradarPlusDataset::exportCascade(const std::vector<ColoradarPlusRun*> &r
 //            }
 //            saveHeatmapsToHDF5(cascadeHeatmapContentName + "_" + run->name, datasetFile, heatmapsFlat, numCascadeFrames, heatmapDims);
 //        }
-//    }
+    //}
 }
 
 }

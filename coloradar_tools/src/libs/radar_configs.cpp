@@ -516,3 +516,10 @@ Json::Value coloradar::RadarConfig::toJson() const {
     // std::string jsonString = Json::writeString(writer, jsonConfig);
     return jsonConfig;
 }
+
+const int& coloradar::RadarConfig::nRangeBins() const { return numPosRangeBins; }
+const float& coloradar::RadarConfig::maxRange() const { return std::ceil(nRangeBins() * rangeBinWidth * 100.0f) / 100.0f; }
+
+int coloradar::RadarConfig::clipAzimuthMaxBin(const int& azMaxBin) { return 1; }
+int coloradar::RadarConfig::clipElevationMaxBin(const int& elMaxBin) { return 1; }
+float coloradar::RadarConfig::clipRange(const float& range) { return range > 0 && range <= maxRange() ? range : maxRange(); }

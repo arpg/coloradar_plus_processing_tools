@@ -1,3 +1,5 @@
+#ARG BASE_IMAGE
+#FROM ${BASE_IMAGE}
 FROM coloradar-tools:20.04-cuda12.6-noetic
 
 

@@ -69,6 +69,12 @@ public:
 
     RadarConfig(const int& nAzimuthBeams = 1, const int& nElevationBeams = 1);
     Json::Value toJson() const;
+
+    const int& nRangeBins() const;
+    const float& maxRange() const;
+    int clipAzimuthMaxBin(const int& azMaxBin);
+    int clipElevationMaxBin(const int& elMaxBin);
+    float clipRange(const float& range);
 };
 
 class SingleChipConfig : public RadarConfig {

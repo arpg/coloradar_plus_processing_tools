@@ -1,6 +1,48 @@
-# Coloradar C Tools
+# Coloradar Tools
 
-## Standard Build
+## 1. Docker Build
+### 1.1. Requirements
+- Linux OS
+- Docker 
+- Docker Compose
+- `yq`
+
+### 2.2. Build
+```bash
+chmod +x build_image.sh
+./build_image.sh <ros_version>
+```
+
+#### Available Image Configurations
+| ros_version | OS                 | Python |
+|-------------|--------------------|--------|
+| noetic      | Ubuntu 20.04 Focal | 3.8    |
+| humble      | Ubuntu 22.04 Jammy | 3.10   |
+| jazzy       | Ubuntu 24.04 Noble | 3.12    |
+
+
+### 2.3. Compose Utils
+```bash
+docker compose build
+docker compose up <util_name>
+```
+Available utils:
+#### 2.3.1. `add_heatmaps_to_bags`
+Requirements:
+1. Install **NVIDIA CUDA** locally.
+2. Build a **noetic** image using `build_image.sh`.
+3. Configure the **base** service in `docker-compose.yml`:
+    - 2.1. Volume the local directory containing the bag files to `/root/bags`.
+    - 2.2. Specify the path to the `calib` directory relatively to `/root/bags`. Defaults to `/root/bags/calib`.
+
+   
+#### Available Utils
+- `add_heatmaps_to_bags`: For every bag in `/root/bags`, create a new topic `/cascade/heatmaps` and convert datacubes from `/cascade/datacubes` into heatmaps with identical metadata.
+- `binarize_bags`: Convert every bag in `/root/bags` into binary files and save as `<bag_name>.zip`. 
+- `export_dataset`: *TBD*.
+
+
+## 2. Standard Build
 
 #### 1. Install dependencies:
 ```bash
@@ -30,65 +72,91 @@ source ./venv/bin/activate
 pip install numpy open3d matplotlib h5py
 ```
 
-## ROS 2 Build (needs revision)
-#### 1. Install `ROS2` and `colcon`
+[//]: # ()
+[//]: # (## ROS 2 Build &#40;needs revision&#41;)
 
-#### 2. Install dependencies
-```bash
-apt install ros-<version>-octomap
-apt install ros-<version>-octomap-ros
-```
+[//]: # (#### 1. Install `ROS2` and `colcon`)
 
-#### 3. Create a Python environment for demo:
-```bash
-virtualenv -p python3 ./venv
-source ./venv/bin/activate
-touch ./venv/COLCON_IGNORE 
-pip install catkin_pkg rosbags lark empy==3.3.4
-pip install numpy open3d-python matplotlib
-```
+[//]: # ()
+[//]: # (#### 2. Install dependencies)
 
-#### 4. Check OpenCV Path
-In `src/CMakeLists.txt`, check the path to the library here
-```text
-set(OpenCV_INCLUDE_DIRS "/usr/include/opencv4")
-```
+[//]: # (```bash)
 
-To list your paths and libraries, use
-```bash
-pkg-config --cflags opencv4
-pkg-config --libs opencv4
-```
+[//]: # (apt install ros-<version>-octomap)
 
-#### 5. Build
-```bash
-colcon build
-```
-Source the workspace:
-```bash
-source install/setup.bash
-```
+[//]: # (apt install ros-<version>-octomap-ros)
 
-#### 6. Run tests
-```bash
-colcon test
-```
-Verbose testing:
-```bash
-colcon test --event-handler console_direct+
-```
+[//]: # (```)
 
-## Utils
+[//]: # ()
+[//]: # (#### 3. Create a Python environment for demo:)
 
-### Requirements
-- Docker 
-- `apt install yq`
+[//]: # (```bash)
 
-### ROS 1 Noetic + Cuda Docker Container
-1. Edit volumes in coloradar_plus_processing_tools/create_noetic_cuda_container.yml
-2. Run script
-```bash
-chmod +x coloradar_plus_processing_tools/build_container.sh
-./coloradar_plus_processing_tools/build_container.sh
-```
+[//]: # (virtualenv -p python3 ./venv)
 
+[//]: # (source ./venv/bin/activate)
+
+[//]: # (touch ./venv/COLCON_IGNORE )
+
+[//]: # (pip install catkin_pkg rosbags lark empy==3.3.4)
+
+[//]: # (pip install numpy open3d-python matplotlib)
+
+[//]: # (```)
+
+[//]: # ()
+[//]: # (#### 4. Check OpenCV Path)
+
+[//]: # (In `src/CMakeLists.txt`, check the path to the library here)
+
+[//]: # (```text)
+
+[//]: # (set&#40;OpenCV_INCLUDE_DIRS "/usr/include/opencv4"&#41;)
+
+[//]: # (```)
+
+[//]: # ()
+[//]: # (To list your paths and libraries, use)
+
+[//]: # (```bash)
+
+[//]: # (pkg-config --cflags opencv4)
+
+[//]: # (pkg-config --libs opencv4)
+
+[//]: # (```)
+
+[//]: # ()
+[//]: # (#### 5. Build)
+
+[//]: # (```bash)
+
+[//]: # (colcon build)
+
+[//]: # (```)
+
+[//]: # (Source the workspace:)
+
+[//]: # (```bash)
+
+[//]: # (source install/setup.bash)
+
+[//]: # (```)
+
+[//]: # ()
+[//]: # (#### 6. Run tests)
+
+[//]: # (```bash)
+
+[//]: # (colcon test)
+
+[//]: # (```)
+
+[//]: # (Verbose testing:)
+
+[//]: # (```bash)
+
+[//]: # (colcon test --event-handler console_direct+)
+
+[//]: # (```)
