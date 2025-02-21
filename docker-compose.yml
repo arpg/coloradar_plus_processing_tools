@@ -1,14 +1,9 @@
 services:
   base:
-    build:
-      context: .
-      dockerfile: docker/ros1-tools.Dockerfile
-      args:
-        BASE_IMAGE: ros:noetic-ros-base
+    image: ghcr.io/arpg/coloradar-lib
     stdin_open: true
     tty: true
     network_mode: "host"
-    image: ros1-tools
     volumes:
       - /media/arpg/brendan-ssd/coloradarplus_data:/root/bags
 
@@ -24,8 +19,5 @@ services:
   binarize_bags:
     extends:
       service: base
-    build:
-      args:
-        BASE_IMAGE: ros:noetic-ros-core
     working_dir: /src/coloradar_plus_processing_tools
     command: bash -c 'source /catkin_ws/devel/setup.bash && python3 main.py'
